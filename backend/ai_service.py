@@ -113,14 +113,9 @@ class AIService:
             ai_service_logger.info(f"Recved response content from LLM: {content}")
             original_format_type = self._detect_format(content)
 
-            if original_format_type != "text":
-                clean_content = self._clean_content(content, original_format_type)
-            else:
-                clean_content = content.strip()
-
             # Handle Markdown to HTML conversion
             html_file_info = None
-            display_content = clean_content
+            display_content = content
             display_format = original_format_type
 
             if original_format_type == "markdown":
@@ -130,9 +125,7 @@ class AIService:
                 markdown_file_info = None
                 try:
                     markdown_file_info = self.markdown_converter.save_markdown_file(
-                        content=clean_content,
-                        prompt_type=prompt_type,
-                        original_input=user_input
+                        content,prompt_type,user_input
                     )
                     if markdown_file_info:
                         ai_service_logger.info(f"Markdown content saved to file: {markdown_file_info['filename']}")
@@ -151,43 +144,13 @@ class AIService:
                             title
                         )
 
-                        if html_file_info and html_content:
-                            ai_service_logger.info(f"Markdown converted to HTML: {html_file_info['filename']}")
-                            display_content = html_content
-                            display_format = "html"
-
-                            # Also register with HTML manager for consistency
-                            try:
-                                registered_html_info = self.html_manager.save_html_content(
-                                    content=html_content,
-                                    prompt_type=prompt_type,
-                                    original_input=user_input
-                                )
-                                if registered_html_info:
-                                    html_file_info.update(registered_html_info)
-                            except Exception as register_error:
-                                ai_service_logger.warning(f"Failed to register HTML with manager: {register_error}")
-                        else:
-                            ai_service_logger.warning("Failed to convert markdown to HTML, using original markdown content")
-                            display_content = clean_content
-                            display_format = "markdown"
-
                     except Exception as conversion_error:
                         ai_service_logger.error(f"Error in markdown to HTML conversion: {conversion_error}")
-                        # Fallback to original markdown content
-                        display_content = clean_content
-                        display_format = "markdown"
-                else:
-                    # If markdown file saving failed, still use the content
-                    display_content = clean_content
-                    display_format = "markdown"
 
             elif original_format_type == "html":
                 ai_service_logger.info("HTML content detected, saving to file")
                 html_file_info = self.html_manager.save_html_content(
-                    content=clean_content,
-                    prompt_type=prompt_type,
-                    original_input=user_input
+                    content,prompt_type,user_input
                 )
                 if html_file_info:
                     ai_service_logger.info(f"HTML content saved: {html_file_info['filename']}")

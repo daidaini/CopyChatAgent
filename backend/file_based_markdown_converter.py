@@ -1,9 +1,20 @@
 import os
 import subprocess
-import tempfile
-import time
+import re
 from datetime import datetime
 from logger import ai_service_logger
+
+def preprocess_svg_for_pandoc(markdown_content):
+    """
+    将SVG包装在HTML div中，确保正确渲染
+    """
+    def replace_svg_block(match):
+        svg_content = match.group(1).strip()
+        # 包装在div中，添加一些有用的类名
+        return f'<div class="svg-container">\n{svg_content}\n</div>'
+    pattern = r'```svg[^\n]*\n(.*?)\n```'
+    result = re.sub(pattern, replace_svg_block, markdown_content, flags=re.DOTALL)
+    return result
 
 class FileBasedMarkdownConverter:
     """File-based Markdown to HTML converter using pandoc"""
@@ -19,6 +30,7 @@ class FileBasedMarkdownConverter:
 
         ai_service_logger.info(f"FileBasedMarkdownConverter initialized - markdown_dir: {self.markdown_dir}, html_dir: {self.html_dir}")
 
+
     def save_markdown_file(self, content, prompt_type=None, original_input=None):
         """Save markdown content to a file and return file info"""
         try:
@@ -28,7 +40,8 @@ class FileBasedMarkdownConverter:
             filepath = os.path.join(self.markdown_dir, filename)
 
             with open(filepath, 'w', encoding='utf-8') as f:
-                f.write(content)
+                new_content = self.preprocess_svg_for_pandoc(content)
+                f.write(new_content)
 
             file_info = {
                 'filename': filename,
@@ -160,3 +173,4 @@ class FileBasedMarkdownConverter:
         except Exception as e:
             ai_service_logger.error(f"Error listing markdown files: {e}")
             return []
+        
