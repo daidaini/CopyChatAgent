@@ -91,6 +91,77 @@ def log_frontend_event():
         api_logger.error(f"Error receiving frontend log: {e}")
         return jsonify({'status': 'error'}), 500
 
+@app.route('/api/html/files', methods=['GET'])
+def get_html_files():
+    """Get list of all HTML files"""
+    try:
+        files = ai_service.get_all_html_files()
+        api_logger.info(f"Returning {len(files)} HTML files")
+        return jsonify({
+            'files': files,
+            'count': len(files)
+        })
+    except Exception as e:
+        api_logger.error(f"Error getting HTML files: {e}")
+        return jsonify({
+            'error': f'Internal server error: {str(e)}'
+        }), 500
+
+@app.route('/api/html/files/<file_id>', methods=['GET'])
+def get_html_file(file_id):
+    """Get specific HTML file content"""
+    try:
+        result = ai_service.get_html_file(file_id)
+        if result:
+            api_logger.info(f"Serving HTML file: {file_id}")
+            return jsonify(result)
+        else:
+            api_logger.warning(f"HTML file not found: {file_id}")
+            return jsonify({
+                'error': 'HTML file not found'
+            }), 404
+    except Exception as e:
+        api_logger.error(f"Error getting HTML file {file_id}: {e}")
+        return jsonify({
+            'error': f'Internal server error: {str(e)}'
+        }), 500
+
+@app.route('/api/html/files/<file_id>', methods=['DELETE'])
+def delete_html_file(file_id):
+    """Delete HTML file"""
+    try:
+        success = ai_service.delete_html_file(file_id)
+        if success:
+            api_logger.info(f"HTML file deleted: {file_id}")
+            return jsonify({
+                'status': 'deleted'
+            })
+        else:
+            api_logger.warning(f"HTML file not found for deletion: {file_id}")
+            return jsonify({
+                'error': 'HTML file not found'
+            }), 404
+    except Exception as e:
+        api_logger.error(f"Error deleting HTML file {file_id}: {e}")
+        return jsonify({
+            'error': f'Internal server error: {str(e)}'
+        }), 500
+
+@app.route('/api/html/files/<file_id>/view', methods=['GET'])
+def view_html_file(file_id):
+    """View HTML file directly in browser"""
+    try:
+        result = ai_service.get_html_file(file_id)
+        if result:
+            api_logger.info(f"Direct view of HTML file: {file_id}")
+            return result['content'], 200, {'Content-Type': 'text/html; charset=utf-8'}
+        else:
+            api_logger.warning(f"HTML file not found for view: {file_id}")
+            return "HTML file not found", 404
+    except Exception as e:
+        api_logger.error(f"Error viewing HTML file {file_id}: {e}")
+        return f"Error loading HTML file: {str(e)}", 500
+
 @app.before_request
 def log_request_info():
     """Log request information"""
@@ -104,5 +175,5 @@ def log_response_info(response):
 
 if __name__ == '__main__':
     api_logger.info("Flask application starting on port 5000")
-    api_logger.info(f"Available endpoints: /api/generate, /api/prompts, /health")
+    api_logger.info(f"Available endpoints: /api/generate, /api/prompts, /health, /api/html/files/*")
     app.run(debug=False, host='0.0.0.0', port=5000)

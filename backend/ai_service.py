@@ -4,6 +4,8 @@ import re
 import requests
 from zai import ZhipuAiClient
 from logger import ai_service_logger
+from html_manager import HTMLManager
+from markdown_converter import MarkdownConverter
 import time
 
 class AIService:
@@ -22,6 +24,14 @@ class AIService:
 
         self.client = ZhipuAiClient(api_key=self.api_key, base_url=self.base_url)
         ai_service_logger.info("ZhipuAiClient initialized successfully")
+
+        # Initialize HTML manager
+        self.html_manager = HTMLManager()
+        ai_service_logger.info("HTML manager initialized successfully")
+
+        # Initialize Markdown converter
+        self.markdown_converter = MarkdownConverter()
+        ai_service_logger.info("Markdown converter initialized successfully")
 
         # Load default prompt
         self.default_prompt = """你是一个专业的AI助手，请根据用户的输入生成有价值的内容。
@@ -95,25 +105,71 @@ class AIService:
                 model="glm-4.5",  # GLM-4.5模型
                 messages=messages,
                 temperature=0.7,
-                max_tokens=1000,
+                max_tokens=8192,
                 stream=False
             )
 
             content = response.choices[0].message.content
-            format_type = self._detect_format(content)
+            original_format_type = self._detect_format(content)
 
-            if format_type != "text":
-                clean_content = self._clean_content(content, format_type)
+            if original_format_type != "text":
+                clean_content = self._clean_content(content, original_format_type)
             else:
                 clean_content = content.strip()
 
+            # Handle Markdown to HTML conversion
+            html_file_info = None
+            display_content = clean_content
+            display_format = original_format_type
+
+            if original_format_type == "markdown":
+                ai_service_logger.info("Markdown content detected, converting to HTML")
+                try:
+                    # Convert Markdown to HTML
+                    html_content = self.markdown_converter.convert_to_html(
+                        markdown_content=clean_content,
+                        title=f"AI Generated Content - {prompt_type or 'Default'}"
+                    )
+
+                    # Save the converted HTML
+                    html_file_info = self.html_manager.save_html_content(
+                        content=html_content,
+                        prompt_type=prompt_type,
+                        original_input=user_input
+                    )
+
+                    if html_file_info:
+                        ai_service_logger.info(f"Markdown converted and HTML saved: {html_file_info['filename']}")
+                        # Use the HTML content for display
+                        display_content = html_content
+                        display_format = "html"
+                    else:
+                        ai_service_logger.warning("Failed to save converted HTML, using original Markdown")
+                except Exception as e:
+                    ai_service_logger.error(f"Error converting Markdown to HTML: {e}")
+                    # Fallback to original Markdown content
+
+            elif original_format_type == "html":
+                ai_service_logger.info("HTML content detected, saving to file")
+                html_file_info = self.html_manager.save_html_content(
+                    content=clean_content,
+                    prompt_type=prompt_type,
+                    original_input=user_input
+                )
+                if html_file_info:
+                    ai_service_logger.info(f"HTML content saved: {html_file_info['filename']}")
+                else:
+                    ai_service_logger.warning("Failed to save HTML content")
+
             processing_time = time.time() - start_time
-            ai_service_logger.info(f"Content generation completed successfully - format: {format_type}, processing_time: {processing_time:.2f}s")
-            ai_service_logger.debug(f"Generated content length: {len(clean_content)}")
+            ai_service_logger.info(f"Content generation completed successfully - original_format: {original_format_type}, display_format: {display_format}, processing_time: {processing_time:.2f}s")
+            ai_service_logger.debug(f"Generated content length: {len(display_content)}")
 
             return {
-                "format": format_type,
-                "content": clean_content
+                "format": display_format,
+                "original_format": original_format_type,
+                "content": display_content,
+                "html_file_info": html_file_info
             }
 
         except Exception as e:
@@ -171,3 +227,15 @@ class AIService:
     def get_available_prompts(self):
         """Get list of available prompt types"""
         return list(self.available_prompts.keys())
+
+    def get_html_file(self, file_id):
+        """Get HTML file content and metadata"""
+        return self.html_manager.get_html_file(file_id)
+
+    def get_all_html_files(self):
+        """Get list of all HTML files"""
+        return self.html_manager.get_all_html_files()
+
+    def delete_html_file(self, file_id):
+        """Delete HTML file"""
+        return self.html_manager.delete_html_file(file_id)
