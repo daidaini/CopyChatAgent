@@ -110,6 +110,7 @@ class AIService:
             )
 
             content = response.choices[0].message.content
+            ai_service_logger.info(f"Recved response content from LLM: {content}")
             original_format_type = self._detect_format(content)
 
             if original_format_type != "text":

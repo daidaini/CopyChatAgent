@@ -6,7 +6,7 @@ from datetime import datetime
 from logger import backend_logger
 
 class HTMLManager:
-    def __init__(self, data_dir='Data/html_files'):
+    def __init__(self, data_dir='../Data/html_files'):
         self.data_dir = data_dir
         self.metadata_file = os.path.join(data_dir, 'metadata.json')
         self._ensure_directories()
