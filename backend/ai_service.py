@@ -2,19 +2,21 @@ import os
 import json
 import re
 import requests
-from zhipuai import ZhipuAI
+from zai import ZhipuAiClient
 
 class AIService:
     def __init__(self):
         self.api_key = os.getenv('GLM_API_KEY')
         self.base_url = os.getenv('AI_BASE_URL', 'https://open.bigmodel.cn/api/paas/v4')
-        
+        self.prompts_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'prompts')
+
         if not self.api_key:
             raise ValueError("GLM_API_KEY environment variable is required")
-        
-        self.client = ZhipuAI(api_key=self.api_key, base_url=self.base_url)
-        
-        self.system_prompt = """你是一个专业的AI助手，请根据用户的输入生成有价值的内容。
+
+        self.client = ZhipuAiClient(api_key=self.api_key, base_url=self.base_url)
+
+        # Load default prompt
+        self.default_prompt = """你是一个专业的AI助手，请根据用户的输入生成有价值的内容。
 你可以生成以下格式的内容：
 1. Markdown格式 - 用于结构化的文档、代码示例等
 2. HTML格式 - 用于富文本内容
@@ -23,15 +25,46 @@ class AIService:
 请根据内容类型自动选择最适合的格式，并在返回时明确指明格式类型。
 你的回答应该清晰、准确、有帮助。"""
 
-    def generate_content(self, user_input):
+        self.available_prompts = self._load_available_prompts()
+
+    def _load_available_prompts(self):
+        """Load all available prompt files from the prompts directory"""
+        prompts = {}
+        if os.path.exists(self.prompts_dir):
+            for filename in os.listdir(self.prompts_dir):
+                if filename.endswith('.md'):
+                    prompt_name = filename[:-3]  # Remove .md extension
+                    prompts[prompt_name] = filename
+        return prompts
+
+    def _load_prompt_content(self, prompt_name):
+        """Load the content of a specific prompt file"""
+        if prompt_name not in self.available_prompts:
+            return self.default_prompt
+
+        prompt_file = os.path.join(self.prompts_dir, self.available_prompts[prompt_name])
         try:
+            with open(prompt_file, 'r', encoding='utf-8') as f:
+                return f.read()
+        except Exception as e:
+            print(f"Error loading prompt {prompt_name}: {e}")
+            return self.default_prompt
+
+    def generate_content(self, user_input, prompt_type=None):
+        try:
+            # Load the appropriate prompt
+            if prompt_type and prompt_type in self.available_prompts:
+                system_prompt = self._load_prompt_content(prompt_type)
+            else:
+                system_prompt = self.default_prompt
+
             messages = [
-                {"role": "system", "content": self.system_prompt},
-                {"role": "user", "content": f"用户输入：{user_input}\n\n请根据用户输入生成合适的内容，并明确指明格式类型（markdown/html/text）。"}
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_input}
             ]
             
             response = self.client.chat.completions.create(
-                model="glm-4-0520",  # GLM-4.5模型
+                model="glm-4.5",  # GLM-4.5模型
                 messages=messages,
                 temperature=0.7,
                 max_tokens=1000,
@@ -101,3 +134,7 @@ class AIService:
                 clean_lines.append(line)
         
         return '\n'.join(clean_lines).strip()
+
+    def get_available_prompts(self):
+        """Get list of available prompt types"""
+        return list(self.available_prompts.keys())

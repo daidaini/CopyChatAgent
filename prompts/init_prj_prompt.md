@@ -5,7 +5,7 @@
 ## 技术栈
 - 前端：Vue.js
 - 后端：Flask
-- AI 接口：默认对接 Anthropic API
+- AI 接口：默认对接 智谱 API
 
 ## 目录结构
 - frontend/   → 前端代码
@@ -60,11 +60,3 @@
    - `frontend/` → Vue.js 前端代码
    - `backend/` → Flask 后端代码
    - 保持前后端独立运行，通过 API 通信
-
-## 输出要求
-请按以上任务分解，分别输出：
-- 前端核心代码示例
-- 后端核心代码示例
-- Anthropic API 调用逻辑示例
-- JSON 请求与响应格式示例
-
