@@ -5,7 +5,7 @@ import requests
 from zai import ZhipuAiClient
 from logger import ai_service_logger
 from html_manager import HTMLManager
-from markdown_converter import MarkdownConverter
+from file_based_markdown_converter import FileBasedMarkdownConverter
 import time
 
 class AIService:
@@ -29,9 +29,9 @@ class AIService:
         self.html_manager = HTMLManager()
         ai_service_logger.info("HTML manager initialized successfully")
 
-        # Initialize Markdown converter
-        self.markdown_converter = MarkdownConverter()
-        ai_service_logger.info("Markdown converter initialized successfully")
+        # Initialize file-based Markdown converter
+        self.markdown_converter = FileBasedMarkdownConverter()
+        ai_service_logger.info("File-based Markdown converter initialized successfully")
 
         # Load default prompt
         self.default_prompt = """你是一个专业的AI助手，请根据用户的输入生成有价值的内容。
@@ -124,31 +124,63 @@ class AIService:
             display_format = original_format_type
 
             if original_format_type == "markdown":
-                ai_service_logger.info("Markdown content detected, converting to HTML")
-                try:
-                    # Convert Markdown to HTML
-                    html_content = self.markdown_converter.convert_to_html(
-                        markdown_content=clean_content,
-                        title=f"AI Generated Content - {prompt_type or 'Default'}"
-                    )
+                ai_service_logger.info("Markdown content detected, saving to file and converting to HTML")
 
-                    # Save the converted HTML
-                    html_file_info = self.html_manager.save_html_content(
-                        content=html_content,
+                # Always save markdown file first
+                markdown_file_info = None
+                try:
+                    markdown_file_info = self.markdown_converter.save_markdown_file(
+                        content=clean_content,
                         prompt_type=prompt_type,
                         original_input=user_input
                     )
-
-                    if html_file_info:
-                        ai_service_logger.info(f"Markdown converted and HTML saved: {html_file_info['filename']}")
-                        # Use the HTML content for display
-                        display_content = html_content
-                        display_format = "html"
+                    if markdown_file_info:
+                        ai_service_logger.info(f"Markdown content saved to file: {markdown_file_info['filename']}")
                     else:
-                        ai_service_logger.warning("Failed to save converted HTML, using original Markdown")
-                except Exception as e:
-                    ai_service_logger.error(f"Error converting Markdown to HTML: {e}")
-                    # Fallback to original Markdown content
+                        ai_service_logger.error("Failed to save markdown file")
+                except Exception as save_error:
+                    ai_service_logger.error(f"Error saving markdown file: {save_error}")
+
+                # Try to convert to HTML
+                html_file_info = None
+                if markdown_file_info:
+                    try:
+                        title = f"AI Generated Content - {prompt_type or 'Default'}"
+                        html_file_info, html_content = self.markdown_converter.convert_markdown_to_html(
+                            markdown_file_info,
+                            title
+                        )
+
+                        if html_file_info and html_content:
+                            ai_service_logger.info(f"Markdown converted to HTML: {html_file_info['filename']}")
+                            display_content = html_content
+                            display_format = "html"
+
+                            # Also register with HTML manager for consistency
+                            try:
+                                registered_html_info = self.html_manager.save_html_content(
+                                    content=html_content,
+                                    prompt_type=prompt_type,
+                                    original_input=user_input
+                                )
+                                if registered_html_info:
+                                    html_file_info.update(registered_html_info)
+                            except Exception as register_error:
+                                ai_service_logger.warning(f"Failed to register HTML with manager: {register_error}")
+                        else:
+                            ai_service_logger.warning("Failed to convert markdown to HTML, using original markdown content")
+                            display_content = clean_content
+                            display_format = "markdown"
+
+                    except Exception as conversion_error:
+                        ai_service_logger.error(f"Error in markdown to HTML conversion: {conversion_error}")
+                        # Fallback to original markdown content
+                        display_content = clean_content
+                        display_format = "markdown"
+                else:
+                    # If markdown file saving failed, still use the content
+                    display_content = clean_content
+                    display_format = "markdown"
 
             elif original_format_type == "html":
                 ai_service_logger.info("HTML content detected, saving to file")
@@ -166,12 +198,18 @@ class AIService:
             ai_service_logger.info(f"Content generation completed successfully - original_format: {original_format_type}, display_format: {display_format}, processing_time: {processing_time:.2f}s")
             ai_service_logger.debug(f"Generated content length: {len(display_content)}")
 
-            return {
+            result = {
                 "format": display_format,
                 "original_format": original_format_type,
                 "content": display_content,
                 "html_file_info": html_file_info
             }
+
+            # Add markdown file info if it exists
+            if original_format_type == "markdown" and markdown_file_info:
+                result["markdown_file_info"] = markdown_file_info
+
+            return result
 
         except Exception as e:
             processing_time = time.time() - start_time
