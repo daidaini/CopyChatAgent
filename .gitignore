@@ -9,3 +9,6 @@ frontend/dist/assets
 frontend/yarn.lock
 
 logs/
+
+backend/Data/
+Data/
