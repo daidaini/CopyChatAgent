@@ -4,18 +4,6 @@ import re
 from datetime import datetime
 from logger import ai_service_logger
 
-def preprocess_svg_for_pandoc(markdown_content):
-    """
-    将SVG包装在HTML div中，确保正确渲染
-    """
-    def replace_svg_block(match):
-        svg_content = match.group(1).strip()
-        # 包装在div中，添加一些有用的类名
-        return f'<div class="svg-container">\n{svg_content}\n</div>'
-    pattern = r'```svg[^\n]*\n(.*?)\n```'
-    result = re.sub(pattern, replace_svg_block, markdown_content, flags=re.DOTALL)
-    return result
-
 class FileBasedMarkdownConverter:
     """File-based Markdown to HTML converter using pandoc"""
 
@@ -23,25 +11,73 @@ class FileBasedMarkdownConverter:
         self.data_dir = data_dir
         self.markdown_dir = os.path.join(data_dir, "markdown")
         self.html_dir = os.path.join(data_dir, "html_files")
+        self.resources_dir = os.path.join(data_dir, "resources")
+        self.svg_dir = os.path.join(self.resources_dir, "svg")
 
         # Create directories if they don't exist
         os.makedirs(self.markdown_dir, exist_ok=True)
         os.makedirs(self.html_dir, exist_ok=True)
+        os.makedirs(self.svg_dir, exist_ok=True)
 
-        ai_service_logger.info(f"FileBasedMarkdownConverter initialized - markdown_dir: {self.markdown_dir}, html_dir: {self.html_dir}")
+        ai_service_logger.info(f"FileBasedMarkdownConverter initialized - markdown_dir: {self.markdown_dir}, html_dir: {self.html_dir}, svg_dir: {self.svg_dir}")
 
+    def _extract_svg_content(self, content):
+        """Extract SVG content from markdown and replace with file references"""
+        svg_pattern = r'```svg\s*\n(.*?)\n```'
+        svg_matches = re.findall(svg_pattern, content, re.DOTALL)
+
+        extracted_svgs = []
+        modified_content = content
+
+        for i, svg_content in enumerate(svg_matches):
+            # Generate SVG filename
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            random_suffix = os.urandom(4).hex()[:8]
+            svg_filename = f"svg_{timestamp}_{random_suffix}_{i+1}.svg"
+            svg_filepath = os.path.join(self.svg_dir, svg_filename)
+
+            # Save SVG file
+            try:
+                with open(svg_filepath, 'w', encoding='utf-8') as f:
+                    f.write(svg_content.strip())
+
+                # Create relative path for markdown reference
+                relative_path = f"../resources/svg/{svg_filename}"
+
+                # Replace the SVG code block with an image reference
+                svg_reference = f'![SVG Diagram]({relative_path})'
+                original_block = f'```svg\n{svg_content}\n```'
+                modified_content = modified_content.replace(original_block, svg_reference)
+
+                extracted_svgs.append({
+                    'filename': svg_filename,
+                    'filepath': svg_filepath,
+                    'relative_path': relative_path,
+                    'size': len(svg_content.strip())
+                })
+
+                ai_service_logger.info(f"SVG extracted and saved: {svg_filename}, size: {len(svg_content.strip())}")
+
+            except Exception as e:
+                ai_service_logger.error(f"Error saving SVG file {svg_filename}: {e}")
+                # Keep original SVG block if saving fails
+                continue
+
+        return modified_content, extracted_svgs
 
     def save_markdown_file(self, content, prompt_type=None, original_input=None):
         """Save markdown content to a file and return file info"""
         try:
+            # Extract SVG content and replace with file references
+            processed_content, extracted_svgs = self._extract_svg_content(content)
+
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             random_suffix = os.urandom(4).hex()[:8]
             filename = f"markdown_{timestamp}_{random_suffix}.md"
             filepath = os.path.join(self.markdown_dir, filename)
 
             with open(filepath, 'w', encoding='utf-8') as f:
-                new_content = self.preprocess_svg_for_pandoc(content)
-                f.write(new_content)
+                f.write(processed_content)
 
             file_info = {
                 'filename': filename,
@@ -49,10 +85,11 @@ class FileBasedMarkdownConverter:
                 'prompt_type': prompt_type,
                 'original_input': original_input,
                 'created_at': datetime.now().isoformat(),
-                'size': len(content)
+                'size': len(processed_content),
+                'extracted_svgs': extracted_svgs
             }
 
-            ai_service_logger.info(f"Markdown file saved: {filename}, size: {len(content)}")
+            ai_service_logger.info(f"Markdown file saved: {filename}, size: {len(processed_content)}, extracted_svgs: {len(extracted_svgs)}")
             return file_info
 
         except Exception as e:
