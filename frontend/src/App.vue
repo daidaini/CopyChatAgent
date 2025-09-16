@@ -43,9 +43,9 @@
       </div>
       
       <div v-if="result" class="result-content">
-        <div v-if="result.format === 'markdown'" v-html="renderedMarkdown"></div>
-        <div v-else-if="result.format === 'html'" v-html="result.content"></div>
-        <div v-else>{{ result.content }}</div>
+        <div v-if="result.format === 'markdown'" v-html="renderedMarkdown" class="markdown-content"></div>
+        <div v-else-if="result.format === 'html'" v-html="result.content" class="html-content"></div>
+        <div v-else class="text-content">{{ result.content }}</div>
       </div>
     </div>
   </div>
@@ -54,6 +54,53 @@
 <script>
 import { marked } from 'marked'
 import axios from 'axios'
+
+// 配置 marked 以支持 SVG 和 HTML 标签
+marked.setOptions({
+  gfm: true,
+  breaks: true,
+  headerIds: false,
+  mangle: false,  // 不要修改内部属性
+  silent: true
+})
+
+// 创建自定义渲染器
+const renderer = new marked.Renderer()
+
+// 重写渲染方法以正确处理 SVG
+renderer.image = function(href, title, text) {
+  let out = `<img src="${href}" alt="${text}"`
+
+  if (title) {
+    out += ` title="${title}"`
+  }
+
+  // SVG 特殊处理
+  if (href.endsWith('.svg')) {
+    out += ` class="svg-image" style="max-width: 100%; height: auto;"`
+  }
+
+  out += '>'
+  return out
+}
+
+// 允许原始 HTML 通过
+renderer.html = function(html) {
+  return html
+}
+
+// 重写列表渲染以避免转义
+renderer.list = function(body, ordered, start) {
+  const type = ordered ? 'ol' : 'ul'
+  const startatt = (ordered && start !== 1) ? (` start="${start}"`) : ''
+  return `<${type}${startatt}>\n${body}</${type}>\n`
+}
+
+renderer.listitem = function(text) {
+  return `<li>${text}</li>\n`
+}
+
+marked.setOptions({ renderer })
 
 export default {
   name: 'App',
@@ -71,7 +118,38 @@ export default {
   computed: {
     renderedMarkdown() {
       if (!this.result || this.result.format !== 'markdown') return ''
-      return marked(this.result.content)
+
+      // 先处理所有被转义的 HTML 标签
+      let content = this.result.content
+
+      console.log('[Frontend] Original content:', content)
+
+      // 解码 HTML 实体，特别是 SVG 标签
+      content = content.replace(/&lt;svg([^&]*?)&gt;([\s\S]*?)&lt;\/svg&gt;/g, (match, attrs, body) => {
+        console.log('[Frontend] Found escaped SVG, restoring...')
+        return `<svg${attrs}>${body}</svg>`
+      })
+
+      // 处理其他常见的 HTML 标签
+      content = content.replace(/&lt;([^&]+?)&gt;/g, '<$1>')
+      content = content.replace(/&lt;\/([^&]+?)&gt;/g, '</$1>')
+
+      console.log('[Frontend] Content after HTML decoding:', content)
+
+      // 使用 marked 处理
+      const html = marked(content)
+
+      console.log('[Frontend] HTML after marked:', html)
+
+      // 后处理：确保 SVG 标签没有被再次转义
+      const finalHtml = html.replace(/&lt;svg/g, '<svg').replace(/&lt;\/svg&gt;/g, '</svg>')
+                           .replace(/&lt;path/g, '<path').replace(/&lt;\/path&gt;/g, '</path>')
+                           .replace(/&lt;circle/g, '<circle').replace(/&lt;\/circle&gt;/g, '</circle>')
+                           .replace(/&lt;rect/g, '<rect').replace(/&lt;\/rect&gt;/g, '</rect>')
+
+      console.log('[Frontend] Final HTML:', finalHtml)
+
+      return finalHtml
     }
   },
   methods: {
