@@ -24,6 +24,7 @@ class MarkdownConverter:
                 html_file_path = html_file.name
 
             # Convert using pandoc with custom styling
+            """
             cmd = [
                 self.pandoc_path,
                 '-s',  # standalone
@@ -35,7 +36,12 @@ class MarkdownConverter:
                 '-o', html_file_path,
                 md_file_path
             ]
-
+            """
+            cmd =[
+                "../trans_markdown.sh",
+                md_file_path,
+                html_file_path
+            ]
             result = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8')
 
             if result.returncode != 0:

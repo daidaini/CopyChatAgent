@@ -45,7 +45,7 @@ class FileBasedMarkdownConverter:
                 relative_path = f"../resources/svg/{svg_filename}"
 
                 # Replace the SVG code block with an image reference
-                svg_reference = f'![SVG Diagram]({relative_path})'
+                svg_reference = f'![]({relative_path})'
                 original_block = f'```svg\n{svg_content}\n```'
                 modified_content = modified_content.replace(original_block, svg_reference)
 
