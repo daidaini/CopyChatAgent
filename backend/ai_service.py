@@ -143,7 +143,7 @@ class AIService:
                             markdown_file_info,
                             title
                         )
-
+                        display_format = "html"
                     except Exception as conversion_error:
                         ai_service_logger.error(f"Error in markdown to HTML conversion: {conversion_error}")
 
