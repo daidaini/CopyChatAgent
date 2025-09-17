@@ -1,6 +1,6 @@
 <template>
   <div class="container">
-    <h1>AI Chat Assistant</h1>
+    <h1>提示词创意验证</h1>
     
     <div class="input-section">
       <div class="prompt-selector">
@@ -11,7 +11,7 @@
           @change="onPromptTypeChange"
           :disabled="isLoading"
         >
-          <option value="">默认助手</option>
+          <option value=""></option>
           <option v-for="prompt in availablePrompts" :key="prompt" :value="prompt">
             {{ getPromptDisplayName(prompt) }}
           </option>
@@ -166,7 +166,9 @@ export default {
 
     getPromptDisplayName(prompt) {
       const displayNames = {
-        'learn_word': '单词学习助手'
+        'learn_word': '单词学习助手',
+        'concept_svg': '结合svg解释概念',
+        'turmin_argumentative_structure': '图尔敏论证结构'
       }
       return displayNames[prompt] || prompt
     },

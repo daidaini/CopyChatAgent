@@ -102,7 +102,7 @@ class AIService:
 
             ai_service_logger.debug("Sending request to GLM API")
             response = self.client.chat.completions.create(
-                model="glm-4.5",  # GLM-4.5模型
+                model="glm-4.5-air",  # GLM-4.5模型
                 messages=messages,
                 temperature=0.7,
                 max_tokens=8192,
@@ -134,9 +134,12 @@ class AIService:
                 except Exception as save_error:
                     ai_service_logger.error(f"Error saving markdown file: {save_error}")
 
-                # Try to convert to HTML
+                needTransToHtml = False
+                if content.find('svg') != -1:
+                    needTransToHtml = True
+
                 html_file_info = None
-                if markdown_file_info:
+                if needTransToHtml:
                     try:
                         title = f"AI Generated Content - {prompt_type or 'Default'}"
                         html_file_info, html_content = self.markdown_converter.convert_markdown_to_html(
@@ -197,7 +200,7 @@ class AIService:
             return "html"
         
         else:
-            return "text"
+            return "markdown"
     
     def _clean_content(self, content, format_type):
         lines = content.split('\n')
