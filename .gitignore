@@ -12,3 +12,5 @@ logs/
 
 backend/Data/
 Data/
+backend/venv/
+venv/
