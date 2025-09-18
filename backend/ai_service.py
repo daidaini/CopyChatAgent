@@ -135,8 +135,8 @@ class AIService:
                     ai_service_logger.error(f"Error saving markdown file: {save_error}")
 
                 needTransToHtml = False
-                if content.find('svg') != -1:
-                    needTransToHtml = True
+                #if content.find('svg') != -1:
+                 #   needTransToHtml = True
 
                 html_file_info = None
                 if needTransToHtml:

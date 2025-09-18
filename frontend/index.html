@@ -106,7 +106,33 @@
       background: #ccc;
       cursor: not-allowed;
     }
-    
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .test-btn {
+      background: #2196F3;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.3s;
+    }
+
+    .test-btn:hover {
+      background: #1976D2;
+    }
+
+    .test-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
     .result-section {
       margin-top: 30px;
     }
@@ -156,6 +182,109 @@
       padding: 2px 6px;
       border-radius: 4px;
       font-family: 'Courier New', monospace;
+    }
+
+    /* Highlight.js 主题样式 */
+    .hljs {
+      background: #2d3748 !important;
+      color: #e2e8f0 !important;
+      padding: 1em !important;
+      border-radius: 0.5em !important;
+      font-family: 'Consolas', 'Monaco', 'Courier New', monospace !important;
+      font-size: 14px !important;
+      line-height: 1.5 !important;
+    }
+
+    .hljs-comment,
+    .hljs-quote {
+      color: #718096 !important;
+      font-style: italic !important;
+    }
+
+    .hljs-keyword,
+    .hljs-selector-tag,
+    .hljs-addition {
+      color: #f56565 !important;
+    }
+
+    .hljs-number,
+    .hljs-string,
+    .hljs-meta .hljs-string,
+    .hljs-literal,
+    .hljs-doctag,
+    .hljs-regexp {
+      color: #68d391 !important;
+    }
+
+    .hljs-title,
+    .hljs-section,
+    .hljs-name,
+    .hljs-selector-id,
+    .hljs-selector-class {
+      color: #63b3ed !important;
+    }
+
+    .hljs-attribute,
+    .hljs-attr,
+    .hljs-variable,
+    .hljs-template-variable,
+    .hljs-class .hljs-title,
+    .hljs-type {
+      color: #fbb6ce !important;
+    }
+
+    .hljs-symbol,
+    .hljs-bullet,
+    .hljs-subst,
+    .hljs-meta,
+    .hljs-meta .hljs-keyword,
+    .hljs-selector-attr,
+    .hljs-selector-pseudo,
+    .hljs-link {
+      color: #ed8936 !important;
+    }
+
+    .hljs-built_in,
+    .hljs-deletion {
+      color: #e53e3e !important;
+    }
+
+    .hljs-formula {
+      background: #4a5568 !important;
+    }
+
+    .hljs-emphasis {
+      font-style: italic !important;
+    }
+
+    .hljs-strong {
+      font-weight: bold !important;
+    }
+
+    /* 改进的代码块容器样式 */
+    .result-content pre {
+      background: #2d3748 !important;
+      border-radius: 8px !important;
+      overflow-x: auto !important;
+      margin: 1em 0 !important;
+      padding: 0 !important;
+      border: 1px solid #4a5568 !important;
+    }
+
+    .result-content pre code {
+      background: transparent !important;
+      padding: 0 !important;
+      color: inherit !important;
+    }
+
+    /* 行内代码样式 */
+    .result-content p code,
+    .result-content li code {
+      background: #edf2f7 !important;
+      color: #2d3748 !important;
+      padding: 0.2em 0.4em !important;
+      border-radius: 3px !important;
+      font-size: 0.9em !important;
     }
 
     .result-content svg {

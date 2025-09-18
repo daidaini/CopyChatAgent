@@ -24,13 +24,22 @@
         placeholder="请输入您的问题或需求..."
         :disabled="isLoading"
       ></textarea>
-      <button
-        class="submit-btn"
-        @click="handleSubmit"
-        :disabled="isLoading || !userInput.trim()"
-      >
-        {{ isLoading ? '生成中...' : '提交' }}
-      </button>
+      <div class="button-group">
+        <button
+          class="submit-btn"
+          @click="handleSubmit"
+          :disabled="isLoading || !userInput.trim()"
+        >
+          {{ isLoading ? '生成中...' : '提交' }}
+        </button>
+        <button
+          class="test-btn"
+          @click="handleTestFile"
+          :disabled="isLoading"
+        >
+          加载测试文件
+        </button>
+      </div>
     </div>
     
     <div class="result-section" v-if="result || error">
@@ -54,6 +63,7 @@
 <script>
 import { marked } from 'marked'
 import axios from 'axios'
+import hljs from 'highlight.js'
 
 // 配置 marked 以支持 SVG 和 HTML 标签
 marked.setOptions({
@@ -98,6 +108,29 @@ renderer.list = function(body, ordered, start) {
 
 renderer.listitem = function(text) {
   return `<li>${text}</li>\n`
+}
+
+// 配置代码高亮
+renderer.code = function({ text: code, lang: language }) {
+  const lang = language || 'text'
+
+  try {
+    const highlighted = hljs.highlight(code, { language: lang }).value
+    return `<pre><code class="hljs language-${lang}">${highlighted}</code></pre>`
+  } catch (e) {
+    // 如果高亮失败，返回原始代码
+    return `<pre><code class="hljs">${escapeHtml(code)}</code></pre>`
+  }
+}
+
+// HTML转义函数
+function escapeHtml(html) {
+  return html
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
 }
 
 marked.setOptions({ renderer })
@@ -171,6 +204,30 @@ export default {
         'turmin_argumentative_structure': '图尔敏论证结构'
       }
       return displayNames[prompt] || prompt
+    },
+
+    async handleTestFile() {
+      console.log('[Frontend] Loading test file...')
+      this.isLoading = true
+      this.error = null
+      this.result = null
+
+      try {
+        const requestData = {
+          input: 'test',  // 必需字段，但会被忽略
+          use_test_file: true
+        }
+
+        const response = await axios.post('/api/generate', requestData)
+        console.log('[Frontend] Test file loaded successfully - format:', response.data.format, 'source:', response.data.source)
+        this.result = response.data
+      } catch (err) {
+        const error = err.response?.data?.error || err.message || '加载测试文件失败，请重试'
+        this.error = error
+        console.error('[Frontend] Test file loading error:', err)
+      } finally {
+        this.isLoading = false
+      }
     },
 
     async handleSubmit() {
