@@ -14,18 +14,6 @@ CORS(app)
 api_logger.info("Starting Flask application")
 ai_service = AIService()
 
-def load_test_markdown_file():
-    """Load test markdown file content"""
-    test_file_path = os.path.join(os.path.dirname(__file__), 'test_content.md')
-    try:
-        with open(test_file_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-        api_logger.info(f"Successfully loaded test markdown file: {test_file_path}")
-        return content
-    except Exception as e:
-        api_logger.error(f"Failed to load test markdown file: {e}")
-        return None
-
 @app.route('/api/generate', methods=['POST'])
 def generate_content():
     start_time = time.time()
@@ -47,31 +35,7 @@ def generate_content():
 
         api_logger.info(f"Processing request - prompt_type: {prompt_type}, use_test_file: {use_test_file}, input_length: {len(user_input)}")
 
-        # Check if we should use test file content
-        if use_test_file:
-            test_content = load_test_markdown_file()
-            if test_content:
-                api_logger.info("Using test markdown file content")
-                # Return the test content as markdown format
-                result = {
-                    'format': 'markdown',
-                    'content': test_content,
-                    'source': 'test_file'
-                }
-
-                processing_time = time.time() - start_time
-                api_logger.info(f"Test file content returned - processing_time: {processing_time:.2f}s")
-                return jsonify(result)
-            else:
-                api_logger.warning("Test file not found, falling back to normal processing")
-
-        if not user_input:
-            api_logger.warning(f"Empty input received from {client_ip}")
-            return jsonify({
-                'error': 'Input cannot be empty'
-            }), 400
-
-        result = ai_service.generate_content(user_input, prompt_type)
+        result = ai_service.generate_content(user_input, prompt_type, use_test_file)
 
         processing_time = time.time() - start_time
         api_logger.info(f"Request completed successfully - processing_time: {processing_time:.2f}s, format: {result.get('format', 'unknown')}")

@@ -81,51 +81,63 @@ class AIService:
             ai_service_logger.error(f"Error loading prompt {prompt_name}: {e}")
             return self.default_prompt
 
-    def generate_content(self, user_input, prompt_type=None):
+    def load_test_markdown_file(self):
+        """Load test markdown file content"""
+        test_file_path = os.path.join(os.path.dirname(__file__), '../Test/test_content.md')
+        try:
+            with open(test_file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            return content
+        except Exception as e:
+            return None
+        
+    def generate_content(self, user_input, prompt_type=None, use_test_file=False):
         start_time = time.time()
         ai_service_logger.info(f"Starting content generation - prompt_type: {prompt_type}, input_length: {len(user_input)}")
         ai_service_logger.debug(f"User input: {user_input[:100]}...")
 
+        content = ""
+        original_format_type = "markdown"
         try:
-            # Load the appropriate prompt
-            if prompt_type and prompt_type in self.available_prompts:
-                system_prompt = self._load_prompt_content(prompt_type)
-                ai_service_logger.info(f"Using custom prompt: {prompt_type}")
+            if use_test_file:
+                content = self.load_test_markdown_file()
+                if content:
+                    ai_service_logger.info("Using test markdown file content")
             else:
-                system_prompt = self.default_prompt
-                ai_service_logger.info("Using default prompt")
+                # Load the appropriate prompt
+                if prompt_type and prompt_type in self.available_prompts:
+                    system_prompt = self._load_prompt_content(prompt_type)
+                    ai_service_logger.info(f"Using custom prompt: {prompt_type}")
+                else:
+                    system_prompt = self.default_prompt
+                    ai_service_logger.info("Using default prompt")
+                messages = [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_input}
+                ]
+                ai_service_logger.debug("Sending request to GLM API")
+                response = self.client.chat.completions.create(
+                    model="glm-4.5",  # GLM-4.5模型
+                    messages=messages,
+                    temperature=0.7,
+                    max_tokens=8192,
+                    stream=False
+                )
+                content = response.choices[0].message.content
+                ai_service_logger.info(f"Recved response content from LLM: {content}")
+                original_format_type = self._detect_format(content)
 
-            messages = [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_input}
-            ]
-
-            ai_service_logger.debug("Sending request to GLM API")
-            response = self.client.chat.completions.create(
-                model="glm-4.5-air",  # GLM-4.5模型
-                messages=messages,
-                temperature=0.7,
-                max_tokens=8192,
-                stream=False
-            )
-
-            content = response.choices[0].message.content
-            ai_service_logger.info(f"Recved response content from LLM: {content}")
-            original_format_type = self._detect_format(content)
 
             # Handle Markdown to HTML conversion
             html_file_info = None
-            display_content = content
             display_format = original_format_type
 
             if original_format_type == "markdown":
-                ai_service_logger.info("Markdown content detected, saving to file and converting to HTML")
-
                 # Always save markdown file first
                 markdown_file_info = None
                 try:
                     markdown_file_info = self.markdown_converter.save_markdown_file(
-                        content,prompt_type,user_input
+                        content,prompt_type,user_input,True
                     )
                     if markdown_file_info:
                         ai_service_logger.info(f"Markdown content saved to file: {markdown_file_info['filename']}")
@@ -135,17 +147,18 @@ class AIService:
                     ai_service_logger.error(f"Error saving markdown file: {save_error}")
 
                 needTransToHtml = False
-                #if content.find('svg') != -1:
-                 #   needTransToHtml = True
+                if content.find('svg') != -1:
+                    needTransToHtml = True
 
                 html_file_info = None
                 if needTransToHtml:
                     try:
-                        title = f"AI Generated Content - {prompt_type or 'Default'}"
+                        title = f"结果页面展示 - {prompt_type or 'Default'}"
                         html_file_info, html_content = self.markdown_converter.convert_markdown_to_html(
                             markdown_file_info,
                             title
                         )
+                        content = html_content
                         display_format = "html"
                     except Exception as conversion_error:
                         ai_service_logger.error(f"Error in markdown to HTML conversion: {conversion_error}")
@@ -162,12 +175,12 @@ class AIService:
 
             processing_time = time.time() - start_time
             ai_service_logger.info(f"Content generation completed successfully - original_format: {original_format_type}, display_format: {display_format}, processing_time: {processing_time:.2f}s")
-            ai_service_logger.debug(f"Generated content length: {len(display_content)}")
+            ai_service_logger.debug(f"Generated content length: {len(content)}")
 
             result = {
                 "format": display_format,
                 "original_format": original_format_type,
-                "content": display_content,
+                "content": content,
                 "html_file_info": html_file_info
             }
 

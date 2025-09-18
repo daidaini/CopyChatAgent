@@ -11,8 +11,7 @@ class FileBasedMarkdownConverter:
         self.data_dir = data_dir
         self.markdown_dir = os.path.join(data_dir, "markdown")
         self.html_dir = os.path.join(data_dir, "html_files")
-        self.resources_dir = os.path.join(data_dir, "resources")
-        self.svg_dir = os.path.join(self.resources_dir, "svg")
+        self.svg_dir = os.path.join("../frontend", "public/images")
 
         # Create directories if they don't exist
         os.makedirs(self.markdown_dir, exist_ok=True)
@@ -42,10 +41,11 @@ class FileBasedMarkdownConverter:
                     f.write(svg_content.strip())
 
                 # Create relative path for markdown reference
-                relative_path = f"../resources/svg/{svg_filename}"
+                relative_path = f"../../frontend/public/images/{svg_filename}"
 
                 # Replace the SVG code block with an image reference
-                svg_reference = f'![]({relative_path})'
+                refer_path = f"public/images/{svg_filename}"
+                svg_reference = f'![]({refer_path})'
                 original_block = f'```svg\n{svg_content}\n```'
                 modified_content = modified_content.replace(original_block, svg_reference)
 
@@ -65,19 +65,25 @@ class FileBasedMarkdownConverter:
 
         return modified_content, extracted_svgs
 
-    def save_markdown_file(self, content, prompt_type=None, original_input=None):
+    def save_markdown_file(self, content, prompt_type=None, original_input=None, need_svg_extraction=False):
         """Save markdown content to a file and return file info"""
         try:
-            # Extract SVG content and replace with file references
-            processed_content, extracted_svgs = self._extract_svg_content(content)
-
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             random_suffix = os.urandom(4).hex()[:8]
             filename = f"markdown_{timestamp}_{random_suffix}.md"
             filepath = os.path.join(self.markdown_dir, filename)
+            filelen = len(content)
+            extracted_svgs = []
 
-            with open(filepath, 'w', encoding='utf-8') as f:
-                f.write(processed_content)
+            if need_svg_extraction:
+                # Extract SVG content and replace with file references
+                processed_content, extracted_svgs = self._extract_svg_content(content)
+                filelen = len(processed_content)
+                with open(filepath, 'w', encoding='utf-8') as f:
+                    f.write(processed_content)
+            else:
+                with open(filepath, 'w', encoding='utf-8') as f:
+                    f.write(content)
 
             file_info = {
                 'filename': filename,
@@ -85,7 +91,7 @@ class FileBasedMarkdownConverter:
                 'prompt_type': prompt_type,
                 'original_input': original_input,
                 'created_at': datetime.now().isoformat(),
-                'size': len(processed_content),
+                'size': filelen,
                 'extracted_svgs': extracted_svgs
             }
 
@@ -112,20 +118,13 @@ class FileBasedMarkdownConverter:
             html_filepath = os.path.join(self.html_dir, html_filename)
 
             # Use pandoc to convert
-            pandoc_path = "/home/yubo/pkgs/pandoc-3.7.0.2/bin/pandoc"
-
-            cmd = [
-                pandoc_path,
+            cmd =[
+                "../trans_markdown.sh",
                 markdown_filepath,
-                '-o', html_filepath,
-                '--standalone',
-                '--metadata', f'title={title}',
-                '--from=markdown',
-                '--to=html5',
-                '--css=https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.8.1/github-markdown.min.css'
+                html_filepath
             ]
 
-            ai_service_logger.debug(f"Running pandoc command: {' '.join(cmd)}")
+            ai_service_logger.info(f"Running pandoc command: {' '.join(cmd)}")
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
 
             if result.returncode == 0:
