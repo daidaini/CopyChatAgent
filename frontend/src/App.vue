@@ -85,12 +85,6 @@ renderer.image = function(href, title, text) {
     out += ` title="${title}"`
   }
 
-  // SVG 特殊处理
-  if (href.endsWith('.svg')) {
-    out += ` class="svg-image" style="max-width: 100%; height: auto;"`
-  }
-
-  out += '>'
   return out
 }
 
