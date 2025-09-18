@@ -83,7 +83,7 @@ class AIService:
 
     def load_test_markdown_file(self):
         """Load test markdown file content"""
-        test_file_path = os.path.join(os.path.dirname(__file__), '../Test/test_content.md')
+        test_file_path = os.path.join(os.path.dirname(__file__), '../test/test_content.md')
         try:
             with open(test_file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
@@ -103,6 +103,12 @@ class AIService:
                 content = self.load_test_markdown_file()
                 if content:
                     ai_service_logger.info("Using test markdown file content")
+                else:
+                    ai_service_logger.error("Failed to load test markdown file")
+                    return {
+                        "format": "text",
+                        "content": "抱歉，无法加载测试文件。"
+                    }
             else:
                 # Load the appropriate prompt
                 if prompt_type and prompt_type in self.available_prompts:
@@ -150,7 +156,6 @@ class AIService:
                 if content.find('svg') != -1:
                     needTransToHtml = True
 
-                html_file_info = None
                 if needTransToHtml:
                     try:
                         title = f"结果页面展示 - {prompt_type or 'Default'}"

@@ -11,8 +11,9 @@ class FileBasedMarkdownConverter:
         self.data_dir = data_dir
         self.markdown_dir = os.path.join(data_dir, "markdown")
         self.html_dir = os.path.join(data_dir, "html_files")
-        self.svg_dir = os.path.join("../frontend", "public/images")
-
+        self.prj_dir = os.getenv('PRJ_PATH', '/var/www/vue-app/')
+        self.svg_dir = os.path.join(self.prj_dir, "public/images")
+        
         # Create directories if they don't exist
         os.makedirs(self.markdown_dir, exist_ok=True)
         os.makedirs(self.html_dir, exist_ok=True)
@@ -41,7 +42,7 @@ class FileBasedMarkdownConverter:
                     f.write(svg_content.strip())
 
                 # Create relative path for markdown reference
-                relative_path = f"../../frontend/public/images/{svg_filename}"
+                relative_path = f"{self.svg_dir}/{svg_filename}"
 
                 # Replace the SVG code block with an image reference
                 refer_path = f"public/images/{svg_filename}"
