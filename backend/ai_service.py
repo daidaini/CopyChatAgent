@@ -180,7 +180,7 @@ class AIService:
 
             processing_time = time.time() - start_time
             ai_service_logger.info(f"Content generation completed successfully - original_format: {original_format_type}, display_format: {display_format}, processing_time: {processing_time:.2f}s")
-            ai_service_logger.debug(f"Generated content length: {len(content)}")
+#            ai_service_logger.debug(f"Generated content length: {len(content)}")
 
             result = {
                 "format": display_format,
