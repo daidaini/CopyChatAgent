@@ -61,6 +61,20 @@ cp .env.example .env              # Create environment file
 python app.py                     # Start Flask server (port 5000)
 ```
 
+### Project Management Scripts
+```bash
+# Main project management script
+./start_project.sh install        # Install dependencies and setup
+./start_project.sh start          # Start backend server
+./start_project.sh stop           # Stop backend server
+./start_project.sh restart        # Restart backend server
+./start_project.sh status         # Check server status
+./start_project.sh logs           # View backend logs
+
+# Markdown translation utility
+./trans_markdown.sh <input.md> <output.html>  # Convert markdown to HTML using pandoc
+```
+
 ### Testing and Utilities
 ```bash
 # Run various test scripts
@@ -111,47 +125,8 @@ The AI service intelligently detects response format:
 - API: Structured error responses in JSON format
 - Logging: Detailed request/response logging with timing information
 
-## File Structure
-
-```
-/
-├── frontend/
-│   ├── src/
-│   │   ├── App.vue          # Main Vue component with dynamic rendering
-│   │   └── main.js          # Vue app entry point
-│   ├── index.html           # HTML template with embedded CSS
-│   ├── package.json         # Frontend dependencies
-│   ├── vite.config.js       # Vite configuration with API proxy
-│   ├── yarn.lock            # Dependency lock file
-│   ├── node_modules/        # Node.js dependencies
-│   └── dist/                # Production build output
-├── backend/
-│   ├── app.py               # Flask main application
-│   ├── ai_service.py        # GLM-4.5 API integration with configurable base URL
-│   ├── file_based_markdown_converter.py  # File-based content conversion
-│   ├── html_manager.py      # HTML content management
-│   ├── markdown_converter.py # Markdown processing utilities
-│   ├── logger.py           # Comprehensive logging system
-│   ├── translate_markdown.py # Utility for translating markdown files
-│   ├── requirements.txt     # Python dependencies
-│   ├── .env                 # Environment variables (actual)
-│   ├── .env.example         # Environment configuration template
-│   ├── logs/                # Application logs directory
-│   └── __pycache__/         # Python bytecode cache
-├── prompts/
-│   ├── init_prj_prompt.md   # Initial project specification prompt
-│   ├── learn_word.md        # Word learning template
-│   └── concept_svg.md       # SVG concept generation template
-├── Data/                   # Data storage directory
-├── .claude/
-│   ├── commands.json        # Claude command configuration
-│   ├── settings.local.json  # Local settings
-│   └── prompts/             # Claude prompt templates
-├── README.md                # Basic project documentation (Chinese)
-├── API_FORMATS.md           # Detailed API format examples
-├── CLAUDE.md                # This file
-└── Various test files        # Python test scripts
-```
+### Claude Code Configuration
+The project includes Claude Code configuration in `.claude/settings.local.json` with pre-approved permissions for common development tasks including file operations, package management, and bash commands.
 
 ## API Reference
 
@@ -162,6 +137,15 @@ The AI service intelligently detects response format:
 
 ### GET /health
 **Response**: `{ "status": "healthy" }`
+
+### GET /api/prompts
+**Response**: `{ "prompts": ["prompt1", "prompt2"], "default": null }`
+
+### HTML File Management
+- `GET /api/html/files` - List all HTML files
+- `GET /api/html/files/<file_id>` - Get specific HTML file content
+- `DELETE /api/html/files/<file_id>` - Delete HTML file
+- `GET /api/html/files/<file_id>/view` - View HTML file directly in browser
 
 ## Development Notes
 

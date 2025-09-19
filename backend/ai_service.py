@@ -91,6 +91,48 @@ class AIService:
         except Exception as e:
             return None
         
+    def _select_model(self, user_input):
+        """
+        根据用户输入智能选择GLM模型
+        返回: 'glm-4.5' 或 'glm-4.5-air'
+        """
+        input_length = len(user_input.strip())
+
+        # 规则1: 基于输入长度
+        if input_length > 16:
+            return 'glm-4.5'
+
+        # 规则2: 基于内容复杂度 - 编程相关
+        programming_keywords = [
+            '代码', '函数', '算法', 'python', 'javascript', 'java', 'c++', 'html', 'css',
+            '编程', '开发', '实现', '调试', 'bug', 'api', '数据库', '框架'
+        ]
+
+        # 规则3: 基于内容复杂度 - 复杂任务词汇
+        complex_task_keywords = [
+            '分析', '设计', '优化', '实现', '架构', '方案', '策略', '流程',
+            '解释', '说明', '总结', '比较', '对比', '评估', '建议'
+        ]
+
+        input_lower = user_input.lower()
+
+        # 检查是否包含编程关键词
+        for keyword in programming_keywords:
+            if keyword in input_lower:
+                return 'glm-4.5'
+
+        # 检查是否包含复杂任务词汇
+        for keyword in complex_task_keywords:
+            if keyword in input_lower:
+                return 'glm-4.5'
+
+        # 规则4: 基于特殊字符和格式
+        if '\n' in user_input or '•' in user_input or '-' in user_input:
+            return 'glm-4.5'
+
+        # 默认使用轻量级模型
+        return 'glm-4.5-air'
+
     def generate_content(self, user_input, prompt_type=None, use_test_file=False):
         start_time = time.time()
         ai_service_logger.info(f"Starting content generation - prompt_type: {prompt_type}, input_length: {len(user_input)}")
@@ -117,13 +159,18 @@ class AIService:
                 else:
                     system_prompt = self.default_prompt
                     ai_service_logger.info("Using default prompt")
+
+                # 智能选择模型
+                selected_model = self._select_model(user_input)
+                ai_service_logger.info(f"Selected model: {selected_model} based on input analysis")
+
                 messages = [
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_input}
                 ]
                 ai_service_logger.debug("Sending request to GLM API")
                 response = self.client.chat.completions.create(
-                    model="glm-4.5",  # GLM-4.5模型
+                    model=selected_model,  # 动态选择的模型
                     messages=messages,
                     temperature=0.7,
                     max_tokens=8192,
