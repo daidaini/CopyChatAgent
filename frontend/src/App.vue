@@ -193,7 +193,8 @@ export default {
         'concept_svg': '禅意图形解释概念',
         'turmin_argumentative_structure': '图尔敏式论证',
         'explain_math_concept' : '简单理解数学概念',
-        'word_memory_card': '生成单词记忆卡片'
+        'word_memory_card': '生成单词记忆卡片',
+        'sugeladi_talk': '苏格拉底来回答'
       }
       return displayNames[prompt] || prompt
     },
