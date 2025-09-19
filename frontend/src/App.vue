@@ -65,15 +65,6 @@ import { marked } from 'marked'
 import axios from 'axios'
 import hljs from 'highlight.js'
 
-// 配置 marked 以支持 SVG 和 HTML 标签
-marked.setOptions({
-  gfm: true,
-  breaks: true,
-  headerIds: false,
-  mangle: false,  // 不要修改内部属性
-  silent: true
-})
-
 // 创建自定义渲染器
 const renderer = new marked.Renderer()
 
@@ -93,16 +84,6 @@ renderer.html = function(html) {
   return html
 }
 
-// 重写列表渲染以避免转义
-renderer.list = function(body, ordered, start) {
-  const type = ordered ? 'ol' : 'ul'
-  const startatt = (ordered && start !== 1) ? (` start="${start}"`) : ''
-  return `<${type}${startatt}>\n${body}</${type}>\n`
-}
-
-renderer.listitem = function(text) {
-  return `<li>${text}</li>\n`
-}
 
 // 配置代码高亮
 renderer.code = function({ text: code, lang: language }) {
@@ -127,7 +108,21 @@ function escapeHtml(html) {
     .replace(/'/g, '&#39;')
 }
 
-marked.setOptions({ renderer })
+// 配置 marked 以支持完整的 Markdown 语法（一次性配置，避免覆盖）
+marked.setOptions({
+  // GitHub Flavored Markdown
+  gfm: true,           // 支持 GFM 语法（表格、删除线等）
+  breaks: true,        // 自动转换换行符为 <br>
+  headerIds: false,    // 不生成header id，避免重复和XSS
+  mangle: false,       // 不修改内部属性，保持链接原样
+  silent: true,        // 静默模式，减少控制台输出
+  pedantic: false,     // 不严格模式，兼容更多语法
+  sanitize: false,     // 不清理HTML，允许自定义标签
+  smartLists: true,    // 智能列表，自动识别列表类型
+  smartypants: false,  // 智能标点，保持原样
+  xhtml: false,       // 不强制XHTML兼容
+  renderer: renderer   // 自定义渲染器
+})
 
 export default {
   name: 'App',
@@ -151,15 +146,16 @@ export default {
 
       console.log('[Frontend] Original content:', content)
 
-      // 解码 HTML 实体，特别是 SVG 标签
+      // 智能HTML实体解码 - 只解码完整的SVG标签，避免干扰markdown语法
+      // 1. 处理完整的SVG标签
       content = content.replace(/&lt;svg([^&]*?)&gt;([\s\S]*?)&lt;\/svg&gt;/g, (match, attrs, body) => {
         console.log('[Frontend] Found escaped SVG, restoring...')
         return `<svg${attrs}>${body}</svg>`
       })
 
-      // 处理其他常见的 HTML 标签
-      content = content.replace(/&lt;([^&]+?)&gt;/g, '<$1>')
-      content = content.replace(/&lt;\/([^&]+?)&gt;/g, '</$1>')
+      // 2. 处理独立的SVG标签（不包含在markdown语法中）
+      content = content.replace(/&lt;(svg|path|circle|rect|g|text|title|desc)([^&]*?)&gt;/g, '<$1$2>')
+      content = content.replace(/&lt;\/(svg|path|circle|rect|g|text|title|desc)&gt;/g, '</$1>')
 
       console.log('[Frontend] Content after HTML decoding:', content)
 
