@@ -98,8 +98,8 @@ class AIService:
         """
         input_length = len(user_input.strip())
 
-        # 规则1: 基于输入长度
-        if input_length > 16:
+        # 规则1: 基于输入长度 或 带lisp字样
+        if input_length > 16 or user_input.find('lisp') != -1:
             return 'glm-4.5'
 
         # 规则2: 基于内容复杂度 - 编程相关

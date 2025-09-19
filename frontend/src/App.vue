@@ -193,9 +193,11 @@ export default {
 
     getPromptDisplayName(prompt) {
       const displayNames = {
-        'learn_word': '单词学习助手',
-        'concept_svg': '结合svg解释概念',
-        'turmin_argumentative_structure': '图尔敏论证结构'
+        'learn_word': '单词学习帮手',
+        'concept_svg': '禅意图形解释概念',
+        'turmin_argumentative_structure': '图尔敏式论证',
+        'explain_math_concept' : '简单理解数学概念',
+        'word_memory_card': '生成单词记忆卡片'
       }
       return displayNames[prompt] || prompt
     },
