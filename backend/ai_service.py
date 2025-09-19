@@ -91,7 +91,7 @@ class AIService:
         except Exception as e:
             return None
         
-    def _select_model(self, user_input):
+    def _select_model(self, user_input, system_prompt):
         """
         根据用户输入智能选择GLM模型
         返回: 'glm-4.5' 或 'glm-4.5-air'
@@ -99,7 +99,7 @@ class AIService:
         input_length = len(user_input.strip())
 
         # 规则1: 基于输入长度 或 带lisp字样
-        if input_length > 16 or user_input.find('lisp') != -1:
+        if input_length > 16 or system_prompt.find('lisp') != -1:
             return 'glm-4.5'
 
         # 规则2: 基于内容复杂度 - 编程相关
@@ -161,7 +161,7 @@ class AIService:
                     ai_service_logger.info("Using default prompt")
 
                 # 智能选择模型
-                selected_model = self._select_model(user_input)
+                selected_model = self._select_model(user_input, system_prompt)
                 ai_service_logger.info(f"Selected model: {selected_model} based on input analysis")
 
                 messages = [
