@@ -38,14 +38,14 @@
           @click="handleSubmit"
           size="large"
         />
-        <NeoBaroqueButton
+        <!--NeoBaroqueButton
           text="加载测试文件"
           variant="secondary"
           icon="❅"
           :disabled="isLoading"
           @click="handleTestFile"
           size="large"
-        />
+        /-->
       </div>
     </NeoBaroqueCard>
     
