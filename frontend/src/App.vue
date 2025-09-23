@@ -4,7 +4,7 @@
 
     <NeoBaroqueHeader
       title="AI聊天助手"
-      subtitle="✧ 智能内容生成与创意验证平台 ✧"
+      subtitle="✧ 预置不同系统提示词,确认不同聊天效果 ✧"
       :main-icon="'✦'"
       main-variant="gold"
       title-prefix-icon="❦"
@@ -15,23 +15,12 @@
     />
 
     <NeoBaroqueCard :title="'✧ 输入区域 ✧'" variant="elevated" padding="large">
-      <div class="prompt-selector">
-        <label for="prompt-type">
-          <NeoBaroqueIcon symbol="❦" size="medium" variant="gold" :glow="true" />
-          <span>提示词类型：</span>
-        </label>
-        <select
-          id="prompt-type"
-          v-model="selectedPromptType"
-          @change="onPromptTypeChange"
-          :disabled="isLoading"
-        >
-          <option value="">✧ 选择提示词类型 ✧</option>
-          <option v-for="prompt in availablePrompts" :key="prompt" :value="prompt">
-            {{ getPromptIcon(prompt) }} {{ getPromptDisplayName(prompt) }}
-          </option>
-        </select>
-      </div>
+      <NeoBaroquePromptSelector
+        :available-prompts="availablePrompts"
+        :selected-prompt="selectedPromptType"
+        :disabled="isLoading"
+        @select="onPromptSelect"
+      />
 
       <textarea
         v-model="userInput"
@@ -100,6 +89,7 @@ import NeoBaroqueButton from './components/NeoBaroqueButton.vue'
 import NeoBaroqueHeader from './components/NeoBaroqueHeader.vue'
 import NeoBaroqueIcon from './components/NeoBaroqueIcon.vue'
 import NeoBaroqueLoading from './components/NeoBaroqueLoading.vue'
+import NeoBaroquePromptSelector from './components/NeoBaroquePromptSelector.vue'
 
 // 创建自定义渲染器
 const renderer = new marked.Renderer()
@@ -168,7 +158,8 @@ export default {
     NeoBaroqueButton,
     NeoBaroqueHeader,
     NeoBaroqueIcon,
-    NeoBaroqueLoading
+    NeoBaroqueLoading,
+    NeoBaroquePromptSelector
   },
   data() {
     return {
@@ -233,26 +224,50 @@ export default {
 
     getPromptDisplayName(prompt) {
       const displayNames = {
-        'learn_word': '单词学习帮手',
-        'concept_svg': '禅意图形解释概念',
-        'turmin_argumentative_structure': '图尔敏式论证',
-        'explain_math_concept' : '简单理解数学概念',
-        'word_memory_card': '生成单词记忆卡片',
-        'sugeladi_talk': '苏格拉底来回答'
+        'learn_word': '📚 单词词源分析',
+        'concept_svg': '🎨 禅意概念图解',
+        'turmin_argumentative_structure': '🏛️ 图尔敏论证模型',
+        'explain_math_concept': '🔢 数学概念原理解析',
+        'sugeladi_talk': '🎭 苏格拉底对话',
+        'first_principles': '⚡ 第一性原理分析',
+        'project_architect': '🏗️ 数字架构师',
+        'coding_mentor': '💻 编程概念导师',
+        'creative_writer': '✍️ 创意写作大师',
+        'logical_thinker': '🧠 逻辑思维训练'
       }
       return displayNames[prompt] || prompt
     },
 
     getPromptIcon(prompt) {
       const icons = {
-        'learn_word': '📚',
+        'learn_word': '📖',
         'concept_svg': '🎨',
         'turmin_argumentative_structure': '🏛️',
         'explain_math_concept': '🔢',
-        'word_memory_card': '💭',
-        'sugeladi_talk': '🎭'
+        'sugeladi_talk': '🎭',
+        'first_principles': '⚡',
+        'project_architect': '🏗️',
+        'coding_mentor': '💻',
+        'creative_writer': '✍️',
+        'logical_thinker': '🧠'
       }
       return icons[prompt] || '✧'
+    },
+
+    getPromptDescription(prompt) {
+      const descriptions = {
+        'learn_word': '深度分析单词词源、词根词缀，建立记忆网络',
+        'concept_svg': '用极简主义美学解释复杂概念，生成禅意SVG图',
+        'turmin_argumentative_structure': '运用图尔敏模型分析论证结构，提升逻辑思维',
+        'explain_math_concept': '挖掘数学概念的直觉起源，还原发现时的惊喜',
+        'sugeladi_talk': '苏格拉底式对话，通过追问探寻问题的本质',
+        'first_principles': '回归本质，从第一性原理重新思考问题',
+        'project_architect': '设计完整的技术架构和项目实施路径',
+        'coding_mentor': '用生动类比讲解编程概念，降低学习门槛',
+        'creative_writer': '激发创作灵感，提供个性化写作指导',
+        'logical_thinker': '运用逻辑框架分析问题，推导合理结论'
+      }
+      return descriptions[prompt] || '专业的AI助手'
     },
 
     async handleTestFile() {
@@ -316,7 +331,8 @@ export default {
       }
     },
 
-    onPromptTypeChange() {
+    onPromptSelect(promptValue) {
+      this.selectedPromptType = promptValue
       console.log('[Frontend] Prompt type changed to:', this.selectedPromptType)
     },
 
@@ -356,24 +372,6 @@ export default {
   font-size: 1.1rem;
 }
 
-.prompt-selector select {
-  width: 100%;
-  padding: 15px;
-  border: var(--border-gold);
-  border-radius: var(--border-radius-ornate);
-  background: var(--ivory);
-  font-size: 1rem;
-  color: var(--charcoal);
-  font-family: var(--primary-font);
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-}
-
-.prompt-selector select:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.3), var(--shadow-gold);
-  transform: translateY(-2px);
-}
 
 .loading-spinner {
   width: 40px;
