@@ -1,13 +1,13 @@
 <template>
   <div class="html-browser">
     <div class="header">
-      <h1>HTML 文件浏览器</h1>
+      <h1>❅ HTML 文件浏览器 ❅</h1>
       <div class="actions">
         <button class="refresh-btn" @click="loadFiles" :disabled="loading">
-          刷新
+          ✧ 刷新 ✧
         </button>
         <button class="back-btn" @click="goBack">
-          返回主页
+          ✧ 返回主页 ✧
         </button>
       </div>
     </div>
@@ -135,11 +135,13 @@ export default {
 </script>
 
 <style scoped>
+@import './neo-baroque.css';
+
 .html-browser {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
-  font-family: Arial, sans-serif;
+  font-family: var(--primary-font);
 }
 
 .header {

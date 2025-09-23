@@ -1,8 +1,8 @@
 <template>
   <div class="html-display">
     <div class="header">
-      <h1>HTML 内容展示</h1>
-      <button class="back-btn" @click="goBack">返回主页</button>
+      <h1>❦ HTML 内容展示 ❦</h1>
+      <button class="back-btn" @click="goBack">✧ 返回主页 ✧</button>
     </div>
 
     <div class="content-container">
@@ -84,11 +84,13 @@ export default {
 </script>
 
 <style scoped>
+@import './neo-baroque.css';
+
 .html-display {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
-  font-family: Arial, sans-serif;
+  font-family: var(--primary-font);
 }
 
 .header {

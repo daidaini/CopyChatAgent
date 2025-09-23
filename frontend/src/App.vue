@@ -1,10 +1,12 @@
 <template>
   <div class="container">
-    <h1>提示词创意验证</h1>
-    
-    <div class="input-section">
+    <NeoBaroqueDecorations />
+
+    <h1>✦ 提示词创意验证 ✦</h1>
+
+    <NeoBaroqueCard :title="'✧ 输入区域 ✧'" variant="elevated" padding="large">
       <div class="prompt-selector">
-        <label for="prompt-type">提示词类型：</label>
+        <label for="prompt-type">❦ 提示词类型：</label>
         <select
           id="prompt-type"
           v-model="selectedPromptType"
@@ -24,39 +26,50 @@
         placeholder="请输入您的问题或需求..."
         :disabled="isLoading"
       ></textarea>
+
       <div class="button-group">
-        <button
-          class="submit-btn"
-          @click="handleSubmit"
+        <NeoBaroqueButton
+          :text="isLoading ? '生成中...' : '提交'"
+          variant="primary"
+          icon="✧"
           :disabled="isLoading || !userInput.trim()"
-        >
-          {{ isLoading ? '生成中...' : '提交' }}
-        </button>
-        <button
-          class="test-btn"
-          @click="handleTestFile"
+          @click="handleSubmit"
+          size="large"
+        />
+        <NeoBaroqueButton
+          text="加载测试文件"
+          variant="secondary"
+          icon="❅"
           :disabled="isLoading"
-        >
-          加载测试文件
-        </button>
+          @click="handleTestFile"
+          size="large"
+        />
       </div>
-    </div>
+    </NeoBaroqueCard>
     
-    <div class="result-section" v-if="result || error">
+    <NeoBaroqueCard
+      v-if="result || error"
+      :title="'❦ 生成结果 ❦'"
+      variant="elevated"
+      padding="large"
+      class="result-card"
+    >
       <div v-if="isLoading" class="loading">
-        正在生成内容，请稍候...
+        <div class="loading-spinner"></div>
+        <p>✧ 正在生成内容，请稍候... ✧</p>
       </div>
-      
+
       <div v-if="error" class="error">
-        {{ error }}
+        <span class="error-icon">⚠</span>
+        <p>{{ error }}</p>
       </div>
-      
+
       <div v-if="result" class="result-content">
         <div v-if="result.format === 'markdown'" v-html="renderedMarkdown" class="markdown-content"></div>
         <div v-else-if="result.format === 'html'" v-html="result.content" class="html-content"></div>
         <div v-else class="text-content">{{ result.content }}</div>
       </div>
-    </div>
+    </NeoBaroqueCard>
   </div>
 </template>
 
@@ -64,6 +77,9 @@
 import { marked } from 'marked'
 import axios from 'axios'
 import hljs from 'highlight.js'
+import NeoBaroqueDecorations from './components/NeoBaroqueDecorations.vue'
+import NeoBaroqueCard from './components/NeoBaroqueCard.vue'
+import NeoBaroqueButton from './components/NeoBaroqueButton.vue'
 
 // 创建自定义渲染器
 const renderer = new marked.Renderer()
@@ -126,6 +142,11 @@ marked.setOptions({
 
 export default {
   name: 'App',
+  components: {
+    NeoBaroqueDecorations,
+    NeoBaroqueCard,
+    NeoBaroqueButton
+  },
   data() {
     return {
       userInput: '',
@@ -281,3 +302,43 @@ export default {
   }
 }
 </script>
+
+<style>
+@import './neo-baroque.css';
+
+.result-card {
+  animation: fadeIn 0.8s ease-out;
+  margin-top: 30px;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--primary-gold);
+  border-top: 3px solid transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+.error-icon {
+  font-size: 2rem;
+  margin-right: 10px;
+  color: var(--ruby-red);
+}
+
+.error p {
+  margin: 0;
+  font-weight: bold;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>
