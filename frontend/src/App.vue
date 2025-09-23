@@ -315,13 +315,7 @@ export default {
         console.log('[Frontend] Request successful - format:', response.data.format, 'original_format:', response.data.original_format)
         this.result = response.data
 
-        // If HTML content was saved (either converted from Markdown or original HTML), navigate to display page
-        if (response.data.html_file_info) {
-          console.log('[Frontend] HTML content saved, navigating to display page')
-          const file_id = response.data.html_file_info.file_id
-          // Navigate to HTML display page
-          window.open(`/html/${file_id}`, '_blank')
-        }
+        // HTML content is now displayed in the original page along with other formats
       } catch (err) {
         const error = err.response?.data?.error || err.message || '生成失败，请重试'
         this.error = error
