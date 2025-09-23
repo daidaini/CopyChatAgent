@@ -2,20 +2,33 @@
   <div class="container">
     <NeoBaroqueDecorations />
 
-    <h1>✦ 提示词创意验证 ✦</h1>
+    <NeoBaroqueHeader
+      title="AI聊天助手"
+      subtitle="✧ 智能内容生成与创意验证平台 ✧"
+      :main-icon="'✦'"
+      main-variant="gold"
+      title-prefix-icon="❦"
+      title-suffix-icon="❦"
+      title-icon-variant="gold"
+      variant="ornate"
+      alignment="center"
+    />
 
     <NeoBaroqueCard :title="'✧ 输入区域 ✧'" variant="elevated" padding="large">
       <div class="prompt-selector">
-        <label for="prompt-type">❦ 提示词类型：</label>
+        <label for="prompt-type">
+          <NeoBaroqueIcon symbol="❦" size="medium" variant="gold" :glow="true" />
+          <span>提示词类型：</span>
+        </label>
         <select
           id="prompt-type"
           v-model="selectedPromptType"
           @change="onPromptTypeChange"
           :disabled="isLoading"
         >
-          <option value=""></option>
+          <option value="">✧ 选择提示词类型 ✧</option>
           <option v-for="prompt in availablePrompts" :key="prompt" :value="prompt">
-            {{ getPromptDisplayName(prompt) }}
+            {{ getPromptIcon(prompt) }} {{ getPromptDisplayName(prompt) }}
           </option>
         </select>
       </div>
@@ -54,10 +67,14 @@
       padding="large"
       class="result-card"
     >
-      <div v-if="isLoading" class="loading">
-        <div class="loading-spinner"></div>
-        <p>✧ 正在生成内容，请稍候... ✧</p>
-      </div>
+      <NeoBaroqueLoading
+        v-if="isLoading"
+        message="✧ 正在生成内容，请稍候 ✧"
+        center-icon="✦"
+        center-variant="gold"
+        variant="inline"
+        :orbit-radius="50"
+      />
 
       <div v-if="error" class="error">
         <span class="error-icon">⚠</span>
@@ -80,6 +97,9 @@ import hljs from 'highlight.js'
 import NeoBaroqueDecorations from './components/NeoBaroqueDecorations.vue'
 import NeoBaroqueCard from './components/NeoBaroqueCard.vue'
 import NeoBaroqueButton from './components/NeoBaroqueButton.vue'
+import NeoBaroqueHeader from './components/NeoBaroqueHeader.vue'
+import NeoBaroqueIcon from './components/NeoBaroqueIcon.vue'
+import NeoBaroqueLoading from './components/NeoBaroqueLoading.vue'
 
 // 创建自定义渲染器
 const renderer = new marked.Renderer()
@@ -145,7 +165,10 @@ export default {
   components: {
     NeoBaroqueDecorations,
     NeoBaroqueCard,
-    NeoBaroqueButton
+    NeoBaroqueButton,
+    NeoBaroqueHeader,
+    NeoBaroqueIcon,
+    NeoBaroqueLoading
   },
   data() {
     return {
@@ -218,6 +241,18 @@ export default {
         'sugeladi_talk': '苏格拉底来回答'
       }
       return displayNames[prompt] || prompt
+    },
+
+    getPromptIcon(prompt) {
+      const icons = {
+        'learn_word': '📚',
+        'concept_svg': '🎨',
+        'turmin_argumentative_structure': '🏛️',
+        'explain_math_concept': '🔢',
+        'word_memory_card': '💭',
+        'sugeladi_talk': '🎭'
+      }
+      return icons[prompt] || '✧'
     },
 
     async handleTestFile() {
@@ -309,6 +344,35 @@ export default {
 .result-card {
   animation: fadeIn 0.8s ease-out;
   margin-top: 30px;
+}
+
+.prompt-selector label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-weight: bold;
+  color: var(--deep-blue);
+  font-size: 1.1rem;
+}
+
+.prompt-selector select {
+  width: 100%;
+  padding: 15px;
+  border: var(--border-gold);
+  border-radius: var(--border-radius-ornate);
+  background: var(--ivory);
+  font-size: 1rem;
+  color: var(--charcoal);
+  font-family: var(--primary-font);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.prompt-selector select:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.3), var(--shadow-gold);
+  transform: translateY(-2px);
 }
 
 .loading-spinner {

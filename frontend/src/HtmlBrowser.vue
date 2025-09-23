@@ -1,16 +1,36 @@
 <template>
   <div class="html-browser">
-    <div class="header">
-      <h1>❅ HTML 文件浏览器 ❅</h1>
-      <div class="actions">
-        <button class="refresh-btn" @click="loadFiles" :disabled="loading">
-          ✧ 刷新 ✧
-        </button>
-        <button class="back-btn" @click="goBack">
-          ✧ 返回主页 ✧
-        </button>
-      </div>
-    </div>
+    <NeoBaroqueHeader
+      title="HTML 文件浏览器"
+      subtitle="✧ 管理和查看生成的HTML文件 ✧"
+      :main-icon="'❅'"
+      main-variant="sapphire"
+      title-prefix-icon="✧"
+      title-suffix-icon="✧"
+      title-icon-variant="gold"
+      variant="compact"
+      alignment="center"
+    >
+      <template #footer>
+        <div class="header-actions">
+          <NeoBaroqueButton
+            text="刷新"
+            variant="accent"
+            icon="✧"
+            :disabled="loading"
+            @click="loadFiles"
+            size="medium"
+          />
+          <NeoBaroqueButton
+            text="返回主页"
+            variant="primary"
+            icon="✧"
+            @click="goBack"
+            size="medium"
+          />
+        </div>
+      </template>
+    </NeoBaroqueHeader>
 
     <div class="content">
       <div v-if="loading" class="loading">
@@ -58,9 +78,15 @@
 
 <script>
 import axios from 'axios'
+import NeoBaroqueHeader from './components/NeoBaroqueHeader.vue'
+import NeoBaroqueButton from './components/NeoBaroqueButton.vue'
 
 export default {
   name: 'HtmlBrowser',
+  components: {
+    NeoBaroqueHeader,
+    NeoBaroqueButton
+  },
   data() {
     return {
       files: [],
@@ -142,6 +168,13 @@ export default {
   margin: 0 auto;
   padding: 20px;
   font-family: var(--primary-font);
+}
+
+.header-actions {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  margin-top: 15px;
 }
 
 .header {

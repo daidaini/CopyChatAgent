@@ -1,9 +1,26 @@
 <template>
   <div class="html-display">
-    <div class="header">
-      <h1>❦ HTML 内容展示 ❦</h1>
-      <button class="back-btn" @click="goBack">✧ 返回主页 ✧</button>
-    </div>
+    <NeoBaroqueHeader
+      title="HTML 内容展示"
+      subtitle="✧ 富文本内容查看器 ✧"
+      :main-icon="'❦'"
+      main-variant="gold"
+      title-prefix-icon="✧"
+      title-suffix-icon="✧"
+      title-icon-variant="gold"
+      variant="compact"
+      alignment="center"
+    >
+      <template #footer>
+        <NeoBaroqueButton
+          text="返回主页"
+          variant="accent"
+          icon="✧"
+          @click="goBack"
+          size="medium"
+        />
+      </template>
+    </NeoBaroqueHeader>
 
     <div class="content-container">
       <div class="html-content" v-if="htmlContent" v-html="htmlContent"></div>
@@ -28,9 +45,15 @@
 
 <script>
 import axios from 'axios'
+import NeoBaroqueHeader from './components/NeoBaroqueHeader.vue'
+import NeoBaroqueButton from './components/NeoBaroqueButton.vue'
 
 export default {
   name: 'HtmlDisplay',
+  components: {
+    NeoBaroqueHeader,
+    NeoBaroqueButton
+  },
   data() {
     return {
       htmlContent: null,
@@ -93,33 +116,9 @@ export default {
   font-family: var(--primary-font);
 }
 
+/* Remove old header styles since we're using NeoBaroqueHeader component */
 .header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
-  padding-bottom: 20px;
-  border-bottom: 2px solid #eee;
-}
-
-.header h1 {
-  color: #2c3e50;
-  margin: 0;
-}
-
-.back-btn {
-  background: #3498db;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background 0.3s;
-}
-
-.back-btn:hover {
-  background: #2980b9;
+  display: none;
 }
 
 .content-container {
