@@ -94,8 +94,7 @@
           </div>
         </div>
 
-        <div v-if="strategyResult.format === 'markdown'" v-html="renderedStrategyCode" class="strategy-code"></div>
-        <div v-else class="strategy-code">{{ strategyResult.content }}</div>
+        <div v-html="renderedStrategyCode" class="strategy-code"></div>
 
         <div class="action-buttons">
           <NeoBaroqueButton
@@ -109,6 +108,7 @@
             text="下载代码"
             variant="secondary"
             icon="💾"
+            :disabled="isDownloading"
             @click="downloadCode"
             size="small"
           />
@@ -195,6 +195,7 @@ export default {
       inputTimeout: null,
       showEnhancedLoading: false,
       loadingProgress: 0,
+      isDownloading: false, // 防止重复下载
       strategyTips: [
         '量化策略需要详细的参数设置才能获得好的回测结果',
         '建议包含止损、止盈等风险管理措施',
@@ -206,14 +207,10 @@ export default {
   },
   computed: {
     renderedStrategyCode() {
-      if (!this.strategyResult || this.strategyResult.format !== 'markdown' || !this.strategyResult.content) return ''
+      if (!this.strategyResult || !this.strategyResult.content) return ''
 
-      try {
-        return marked(this.strategyResult.content)
-      } catch (e) {
-        console.error('[QuantStrategy] Markdown rendering error:', e)
-        return `<pre><code>${escapeHtml(this.strategyResult.content || '')}</code></pre>`
-      }
+      // 直接返回格式化的代码内容，不使用markdown渲染
+      return `<pre><code>${escapeHtml(this.strategyResult.content)}</code></pre>`
     }
   },
   methods: {
@@ -300,17 +297,32 @@ export default {
     },
 
     downloadCode() {
-      if (!this.strategyResult?.content) return
+      if (!this.strategyResult?.content || this.isDownloading) return
 
-      const blob = new Blob([this.strategyResult.content], { type: 'text/plain' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `quant_strategy_${new Date().getTime()}.py`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
+      this.isDownloading = true
+
+      try {
+        const blob = new Blob([this.strategyResult.content], { type: 'text/plain' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `quant_strategy_${new Date().getTime()}.py`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+
+        // 添加下载成功的提示
+        console.log('[QuantStrategy] Code downloaded successfully')
+      } catch (error) {
+        console.error('[QuantStrategy] Download error:', error)
+        alert('下载失败，请重试')
+      } finally {
+        // 重置下载状态
+        setTimeout(() => {
+          this.isDownloading = false
+        }, 1000)
+      }
     },
 
     onInputChange() {

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-CopyChatAgent is a full-stack AI chat application that provides a web interface for interacting with BigModel's GLM-4.5 API (智谱清言GLM-4.5). The application features intelligent content formatting detection, supports multiple output formats (Markdown, HTML, plain text), and includes file-based content management capabilities. Built with Vue.js frontend and Flask backend, it demonstrates a modern AI-powered chat application with comprehensive logging and modular architecture.
+CopyChatAgent is a full-stack AI chat application with quantitative trading strategy generation capabilities. It provides a dual-interface web application for interacting with BigModel's GLM-4.5 API (智谱清言GLM-4.5) featuring intelligent content formatting detection, multiple output formats (Markdown, HTML, plain text), file-based content management, and a specialized quantitative trading strategy generator using knowledge base retrieval. Built with Vue.js frontend and Flask backend, it demonstrates a modern AI-powered application with comprehensive logging, timeout management, and modular architecture.
 
 ## Architecture
 
@@ -33,6 +33,7 @@ CopyChatAgent is a full-stack AI chat application that provides a web interface 
 - **Environment**: Configured via `python-dotenv`
 
 ### Data Flow
+#### Chat Interface
 1. User input in Vue.js frontend → POST to `/api/generate`
 2. Flask routes request to `AIService.generate_content()` with optional prompt type
 3. BigModel API call with system prompt + user input (using configurable base URL)
@@ -40,6 +41,15 @@ CopyChatAgent is a full-stack AI chat application that provides a web interface 
 5. Content cleaning and formatting
 6. JSON response with `format` and `content` fields
 7. Frontend dynamically renders based on format type
+
+#### Quantitative Strategy Generator
+1. User input in QuantStrategyGenerator component → POST to `/api/generate_quant_trade_strategy`
+2. Flask routes to `AIService.generate_quant_trade_strategy()` with optional knowledge base
+3. Knowledge base retrieval (if specified) via `KnowledgeBaseService`
+4. BigModel API call with quantitative trading system prompt
+5. Strategy code generation with implementation steps
+6. JSON response with structured strategy data
+7. Frontend displays code with syntax highlighting and download options
 
 ## Development Commands
 
@@ -85,6 +95,9 @@ python test_logging.py                   # Test logging functionality
 
 # Translate markdown files using AI service
 python translate_markdown.py <input.md> <output.md>
+
+# Test bug fixes (see test_bug_fixes.html for visual testing)
+open frontend/test_bug_fixes.html         # Test UI bug fixes in browser
 ```
 
 ## Configuration
@@ -100,6 +113,7 @@ python translate_markdown.py <input.md> <output.md>
 - Backend CORS configured for cross-origin requests
 - Health check endpoint available at `/health`
 - Model used: `glm-4-0520` (GLM-4.5 variant)
+- Separate API clients for knowledge base vs LLM operations with different base URLs
 
 ## Key Implementation Details
 
@@ -114,10 +128,36 @@ The AI service intelligently detects response format:
 - **HTML**: Contains HTML tags and explicit "format: html"
 - **Text**: Default fallback for plain text responses
 
+### Timeout Management System
+Sophisticated timeout configuration for different API types:
+- **Chat Operations**: 60 seconds (standard conversation)
+- **Quantitative Strategies**: 5 minutes (complex strategy generation)
+- **Knowledge Base Queries**: 30 seconds (retrieval operations)
+- **File Operations**: 120 seconds (large file handling)
+- **Default**: 30 seconds (general API calls)
+- Implementation: Centralized in `axiosConfig.js` with request-specific timeouts
+
+### Enhanced Loading UI
+Advanced loading component (`EnhancedLoading.vue`) with:
+- **Orbit Animation**: Multi-layered rotating planets with central star
+- **Progress Tracking**: Visual progress bar with percentage display
+- **Time Display**: Elapsed time and estimated completion time
+- **User Tips**: Rotating helpful tips during long operations
+- **Cancel Functionality**: User can cancel long-running operations
+- **Fullscreen Modal**: Backdrop blur with centered loading content
+- **Responsive Design**: Mobile-friendly layout adaptations
+
 ### Content Management
 - **File-based Conversion**: `FileBasedMarkdownConverter` handles file operations
 - **HTML Management**: `HTMLManager` provides HTML content utilities
 - **Logging**: Comprehensive logging system with separate loggers for API and AI service
+
+### Knowledge Base Integration
+Separate service architecture for knowledge base operations:
+- **KnowledgeBaseService**: Handles knowledge base retrieval and management
+- **Separate Base URLs**: Knowledge base API vs LLM API with different endpoints
+- **Strategy Enhancement**: Quantitative strategies can leverage knowledge base for domain-specific expertise
+- **API Endpoints**: `/api/generate_quant_trade_strategy/knowledge_bases` for listing available knowledge bases
 
 ### Error Handling
 - Frontend: Displays user-friendly error messages with loading states
@@ -140,6 +180,15 @@ The project includes Claude Code configuration in `.claude/settings.local.json` 
 
 ### GET /api/prompts
 **Response**: `{ "prompts": ["prompt1", "prompt2"], "default": null }`
+
+### POST /api/generate_quant_trade_strategy
+**Request**: `{ "prompt": "strategy description", "knowledge_base_name": "optional_kb_name" }`
+**Response**: `{ "content": "strategy_code", "implementation_steps": "steps_description", "knowledge_base_used": "kb_name" }`
+**Error**: `{ "error": "error message" }`
+
+### GET /api/generate_quant_trade_strategy/knowledge_bases
+**Response**: `{ "knowledge_bases": [{"id": "kb_id", "name": "kb_name"}] }`
+**Purpose**: Retrieve available knowledge bases for quantitative strategy generation
 
 ### HTML File Management
 - `GET /api/html/files` - List all HTML files
@@ -169,6 +218,9 @@ The project includes Claude Code configuration in `.claude/settings.local.json` 
 4. **Dependencies**: Use `yarn install` for frontend, `pip install -r requirements.txt` for backend
 5. **Chinese Content**: The system and UI are designed for Chinese language content
 6. **Logging**: Check `backend/logs/` directory for detailed logs
+7. **Timeout Issues**: Quantitative strategies may take up to 5 minutes - use enhanced loading UI for long operations
+8. **Knowledge Base Access**: Ensure proper API permissions for knowledge base retrieval operations
+9. **Code Display**: Strategy code uses direct pre+code rendering to avoid markdown parsing issues
 
 ### Model Configuration
 - Default model: `glm-4-0520`
@@ -180,3 +232,16 @@ The project includes Claude Code configuration in `.claude/settings.local.json` 
 - The `FileBasedMarkdownConverter` handles file operations for markdown conversion
 - HTML content is managed through the `HTMLManager` class
 - All logging is centralized through the `logger.py` module
+
+### Frontend Architecture
+- **Dual-Tab Interface**: Seamless switching between AI Chat and Quantitative Strategy Generator
+- **NeoBaroque UI Design**: Ornate, decorative styling with gold accents and smooth animations
+- **Code Syntax Highlighting**: Uses highlight.js for Python code display in strategy generator
+- **Anti-Double-Click Protection**: Prevents duplicate downloads and form submissions
+- **Responsive Design**: Mobile-first approach with adaptive layouts for all screen sizes
+
+### Bug Fixes and Quality Assurance
+- **Strategy Code Display**: Fixed markdown rendering issues by using direct pre+code tags
+- **Download Double-Trigger**: Added state management to prevent duplicate downloads
+- **Enhanced Error Handling**: Comprehensive timeout management and user feedback
+- **Testing Suite**: Visual testing via `test_bug_fixes.html` for UI component validation
