@@ -14,43 +14,51 @@
       alignment="center"
     />
 
-    <NeoBaroqueCard :title="'✧ 输入区域 ✧'" variant="elevated" padding="large">
-      <NeoBaroquePromptSelector
-        :available-prompts="availablePrompts"
-        :selected-prompt="selectedPromptType"
-        :disabled="isLoading"
-        @select="onPromptSelect"
-      />
+    <!-- Tab Navigation -->
+    <NeoBaroqueTabNavigation
+      :tabs="tabs"
+      :active-tab="activeTab"
+      :is-loading="isLoading"
+      @tab-change="handleTabChange"
+    />
 
-      <textarea
-        v-model="userInput"
-        @input="onInputChange"
-        placeholder="请输入您的问题或需求..."
-        :disabled="isLoading"
-      ></textarea>
-
-      <div class="button-group">
-        <NeoBaroqueButton
-          :text="isLoading ? '生成中...' : '提交'"
-          variant="primary"
-          icon="✧"
-          :disabled="isLoading || !userInput.trim()"
-          @click="handleSubmit"
-          size="large"
-        />
-        <!--NeoBaroqueButton
-          text="加载测试文件"
-          variant="secondary"
-          icon="❅"
+    <!-- Main Chat Interface -->
+    <div v-if="activeTab === 'chat'" class="tab-content">
+      <NeoBaroqueCard :title="'✧ 输入区域 ✧'" variant="elevated" padding="large">
+        <NeoBaroquePromptSelector
+          :available-prompts="availablePrompts"
+          :selected-prompt="selectedPromptType"
           :disabled="isLoading"
-          @click="handleTestFile"
-          size="large"
-        /-->
-      </div>
-    </NeoBaroqueCard>
+          @select="onPromptSelect"
+        />
+
+        <textarea
+          v-model="userInput"
+          @input="onInputChange"
+          placeholder="请输入您的问题或需求..."
+          :disabled="isLoading"
+        ></textarea>
+
+        <div class="button-group">
+          <NeoBaroqueButton
+            :text="isLoading ? '生成中...' : '提交'"
+            variant="primary"
+            icon="✧"
+            :disabled="isLoading || !userInput.trim()"
+            @click="handleSubmit"
+            size="large"
+          />
+        </div>
+      </NeoBaroqueCard>
+    </div>
+
+    <!-- Quantitative Strategy Generator -->
+    <div v-if="activeTab === 'quant'" class="tab-content">
+      <QuantStrategyGenerator />
+    </div>
     
     <NeoBaroqueCard
-      v-if="result || error"
+      v-if="activeTab === 'chat' && (result || error)"
       :title="'❦ 生成结果 ❦'"
       variant="elevated"
       padding="large"
@@ -90,6 +98,8 @@ import NeoBaroqueHeader from './components/NeoBaroqueHeader.vue'
 import NeoBaroqueIcon from './components/NeoBaroqueIcon.vue'
 import NeoBaroqueLoading from './components/NeoBaroqueLoading.vue'
 import NeoBaroquePromptSelector from './components/NeoBaroquePromptSelector.vue'
+import NeoBaroqueTabNavigation from './components/NeoBaroqueTabNavigation.vue'
+import QuantStrategyGenerator from './components/QuantStrategyGenerator.vue'
 
 // 创建自定义渲染器
 const renderer = new marked.Renderer()
@@ -126,6 +136,7 @@ renderer.code = function({ text: code, lang: language }) {
 
 // HTML转义函数
 function escapeHtml(html) {
+  if (!html) return ''
   return html
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -159,7 +170,9 @@ export default {
     NeoBaroqueHeader,
     NeoBaroqueIcon,
     NeoBaroqueLoading,
-    NeoBaroquePromptSelector
+    NeoBaroquePromptSelector,
+    NeoBaroqueTabNavigation,
+    QuantStrategyGenerator
   },
   data() {
     return {
@@ -169,7 +182,12 @@ export default {
       error: null,
       isLoading: false,
       availablePrompts: [],
-      inputTimeout: null
+      inputTimeout: null,
+      activeTab: 'chat',
+      tabs: [
+        { id: 'chat', label: 'AI聊天', icon: '💬' },
+        { id: 'quant', label: '量化策略', icon: '📈' }
+      ]
     }
   },
   computed: {
@@ -338,6 +356,14 @@ export default {
       this.inputTimeout = setTimeout(() => {
         console.log('[Frontend] Input changed - length:', this.userInput.length)
       }, 500)
+    },
+
+    handleTabChange(tabId) {
+      console.log('[Frontend] Tab changed to:', tabId)
+      this.activeTab = tabId
+      // Clear results when switching tabs
+      this.result = null
+      this.error = null
     }
   },
 
@@ -396,5 +422,9 @@ export default {
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+.tab-content {
+  animation: fadeIn 0.5s ease-out;
 }
 </style>

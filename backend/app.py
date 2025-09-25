@@ -198,6 +198,24 @@ def generate_quant_trade_strategy():
             'error': f'Internal server error: {str(e)}'
         }), 500
 
+@app.route('/api/generate_quant_trade_strategy/knowledge_bases', methods=['GET'])
+def get_knowledge_bases():
+    """Get available knowledge bases for quantitative trading"""
+    client_ip = request.remote_addr
+    api_logger.info(f"Received GET /api/generate_quant_trade_strategy/knowledge_bases request from {client_ip}")
+
+    try:
+        knowledge_bases = ai_service.knowledge_base_service.get_knowledge_base_list()
+        api_logger.info(f"Returning {len(knowledge_bases)} knowledge bases to {client_ip}")
+        return jsonify({
+            'knowledge_bases': knowledge_bases
+        })
+    except Exception as e:
+        api_logger.error(f"Error getting knowledge bases for {client_ip}: {e}")
+        return jsonify({
+            'error': f'Internal server error: {str(e)}'
+        }), 500
+
 @app.before_request
 def log_request_info():
     """Log request information"""
