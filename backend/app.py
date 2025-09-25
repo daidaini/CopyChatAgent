@@ -157,6 +157,47 @@ def view_html_file(file_id):
         api_logger.error(f"Error viewing HTML file {file_id}: {e}")
         return f"Error loading HTML file: {str(e)}", 500
 
+@app.route('/api/generate_quant_trade_strategy', methods=['POST'])
+def generate_quant_trade_strategy():
+    """Generate quantitative trading strategy using knowledge base"""
+    start_time = time.time()
+    client_ip = request.remote_addr
+    api_logger.info(f"Received POST /api/generate_quant_trade_strategy request from {client_ip}")
+
+    try:
+        data = request.get_json()
+
+        if not data or 'prompt' not in data:
+            api_logger.warning(f"Missing required field 'prompt' in request from {client_ip}")
+            return jsonify({
+                'error': 'Missing required field: prompt'
+            }), 400
+
+        user_prompt = data['prompt'].strip()
+        knowledge_base_name = data.get('knowledge_base_name', 'quant_trade_api_doc')
+
+        if not user_prompt:
+            api_logger.warning(f"Empty prompt in request from {client_ip}")
+            return jsonify({
+                'error': 'Prompt cannot be empty'
+            }), 400
+
+        api_logger.info(f"Processing quant trade strategy request - knowledge_base: {knowledge_base_name}, prompt_length: {len(user_prompt)}")
+
+        result = ai_service.generate_quant_trade_strategy(user_prompt, knowledge_base_name)
+
+        processing_time = time.time() - start_time
+        api_logger.info(f"Quant trade strategy request completed successfully - processing_time: {processing_time:.2f}s, format: {result.get('format', 'unknown')}")
+
+        return jsonify(result)
+
+    except Exception as e:
+        processing_time = time.time() - start_time
+        api_logger.error(f"Error processing quant trade strategy request from {client_ip}: {e} - processing_time: {processing_time:.2f}s")
+        return jsonify({
+            'error': f'Internal server error: {str(e)}'
+        }), 500
+
 @app.before_request
 def log_request_info():
     """Log request information"""
@@ -170,5 +211,5 @@ def log_response_info(response):
 
 if __name__ == '__main__':
     api_logger.info("Flask application starting on port 5000")
-    api_logger.info(f"Available endpoints: /api/generate, /api/prompts, /health, /api/html/files/*")
+    api_logger.info(f"Available endpoints: /api/generate, /api/prompts, /health, /api/html/files/*, /api/generate_quant_trade_strategy")
     app.run(debug=False, host='0.0.0.0', port=5000)
