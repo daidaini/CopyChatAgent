@@ -116,15 +116,32 @@
       </div>
     </NeoBaroqueCard>
   </div>
+
+  <!-- 增强加载组件 -->
+  <EnhancedLoading
+    v-if="showEnhancedLoading"
+    :title="'正在生成量化策略'"
+    :message="'AI正在分析您的需求并生成专业策略，请耐心等待...'"
+    :center-icon="'📊'"
+    :fullscreen="true"
+    :show-cancel="true"
+    :show-progress="true"
+    :progress="Math.round(loadingProgress)"
+    :estimated-time="120"
+    :show-time="true"
+    :tips="strategyTips"
+    @cancel="cancelRequest"
+  />
 </template>
 
 <script>
 import { marked } from 'marked'
-import axios from 'axios'
+import { quantApi } from '../utils/axiosConfig'
 import hljs from 'highlight.js'
 import NeoBaroqueCard from './NeoBaroqueCard.vue'
 import NeoBaroqueButton from './NeoBaroqueButton.vue'
 import NeoBaroqueLoading from './NeoBaroqueLoading.vue'
+import EnhancedLoading from './EnhancedLoading.vue'
 
 // 配置代码高亮
 function setupCodeHighlighting() {
@@ -164,7 +181,8 @@ export default {
   components: {
     NeoBaroqueCard,
     NeoBaroqueButton,
-    NeoBaroqueLoading
+    NeoBaroqueLoading,
+    EnhancedLoading
   },
   data() {
     return {
@@ -174,7 +192,16 @@ export default {
       error: null,
       isLoading: false,
       knowledgeBases: [],
-      inputTimeout: null
+      inputTimeout: null,
+      showEnhancedLoading: false,
+      loadingProgress: 0,
+      strategyTips: [
+        '量化策略需要详细的参数设置才能获得好的回测结果',
+        '建议包含止损、止盈等风险管理措施',
+        '不同的市场环境可能需要不同的策略参数',
+        '回测时请考虑交易成本和滑点的影响',
+        '建议在实盘交易前进行充分的回测验证'
+      ]
     }
   },
   computed: {
@@ -192,7 +219,7 @@ export default {
   methods: {
     async loadKnowledgeBases() {
       try {
-        const response = await axios.get('/api/generate_quant_trade_strategy/knowledge_bases')
+        const response = await quantApi.getKnowledgeBases()
         this.knowledgeBases = response.data.knowledge_bases || []
         console.log('[QuantStrategy] Knowledge bases loaded:', this.knowledgeBases.length)
       } catch (err) {
@@ -205,8 +232,17 @@ export default {
 
       console.log('[QuantStrategy] Generating strategy...')
       this.isLoading = true
+      this.showEnhancedLoading = true
       this.error = null
       this.strategyResult = null
+      this.loadingProgress = 0
+
+      // 模拟进度更新
+      const progressInterval = setInterval(() => {
+        if (this.loadingProgress < 90) {
+          this.loadingProgress += Math.random() * 10
+        }
+      }, 2000)
 
       try {
         const requestData = {
@@ -217,15 +253,23 @@ export default {
           requestData.knowledge_base_name = this.knowledgeBases.find(kb => kb.id === this.selectedKnowledgeBase)?.name
         }
 
-        const response = await axios.post('/api/generate_quant_trade_strategy', requestData)
+        const response = await quantApi.generateStrategy(requestData)
         console.log('[QuantStrategy] Strategy generated successfully')
         this.strategyResult = response.data
+        this.loadingProgress = 100
       } catch (err) {
         const error = err.response?.data?.error || err.message || '生成策略失败，请重试'
         this.error = error
         console.error('[QuantStrategy] API Error:', err)
+
+        // 特殊处理超时错误
+        if (err.code === 'ECONNABORTED' || err.message.includes('timeout')) {
+          this.error = '策略生成超时，可能因为请求过于复杂，请简化需求或稍后重试'
+        }
       } finally {
+        clearInterval(progressInterval)
         this.isLoading = false
+        this.showEnhancedLoading = false
       }
     },
 
@@ -234,6 +278,13 @@ export default {
       this.selectedKnowledgeBase = ''
       this.strategyResult = null
       this.error = null
+    },
+
+    cancelRequest() {
+      console.log('[QuantStrategy] Request cancelled by user')
+      this.showEnhancedLoading = false
+      this.isLoading = false
+      this.error = '用户取消了请求'
     },
 
     async copyToClipboard() {

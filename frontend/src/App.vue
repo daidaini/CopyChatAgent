@@ -89,7 +89,7 @@
 
 <script>
 import { marked } from 'marked'
-import axios from 'axios'
+import { chatApi } from './utils/axiosConfig'
 import hljs from 'highlight.js'
 import NeoBaroqueDecorations from './components/NeoBaroqueDecorations.vue'
 import NeoBaroqueCard from './components/NeoBaroqueCard.vue'
@@ -100,6 +100,7 @@ import NeoBaroqueLoading from './components/NeoBaroqueLoading.vue'
 import NeoBaroquePromptSelector from './components/NeoBaroquePromptSelector.vue'
 import NeoBaroqueTabNavigation from './components/NeoBaroqueTabNavigation.vue'
 import QuantStrategyGenerator from './components/QuantStrategyGenerator.vue'
+import EnhancedLoading from './components/EnhancedLoading.vue'
 
 // 创建自定义渲染器
 const renderer = new marked.Renderer()
@@ -172,7 +173,8 @@ export default {
     NeoBaroqueLoading,
     NeoBaroquePromptSelector,
     NeoBaroqueTabNavigation,
-    QuantStrategyGenerator
+    QuantStrategyGenerator,
+    EnhancedLoading
   },
   data() {
     return {
@@ -232,7 +234,7 @@ export default {
     async loadPrompts() {
       console.log('[Frontend] Loading prompts...')
       try {
-        const response = await axios.get('/api/prompts')
+        const response = await chatApi.getPrompts()
         this.availablePrompts = response.data.prompts || []
         console.log('[Frontend] Prompts loaded successfully:', this.availablePrompts.length)
       } catch (err) {
@@ -329,7 +331,7 @@ export default {
           requestData.prompt_type = this.selectedPromptType
         }
 
-        const response = await axios.post('/api/generate', requestData)
+        const response = await chatApi.generate(requestData)
         console.log('[Frontend] Request successful - format:', response.data.format, 'original_format:', response.data.original_format)
         this.result = response.data
 
@@ -338,6 +340,11 @@ export default {
         const error = err.response?.data?.error || err.message || '生成失败，请重试'
         this.error = error
         console.error('[Frontend] API Error:', err)
+
+        // 特殊处理超时错误
+        if (err.code === 'ECONNABORTED' || err.message.includes('timeout')) {
+          this.error = '请求超时，服务器处理时间过长，请稍后重试或简化您的问题'
+        }
       } finally {
         this.isLoading = false
       }
