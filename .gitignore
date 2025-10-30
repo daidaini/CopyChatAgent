@@ -20,3 +20,5 @@ venv/
 test/
 
 trans_markdown.sh
+
+Doc/

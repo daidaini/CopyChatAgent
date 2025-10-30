@@ -32,10 +32,11 @@ def generate_content():
         user_input = data['input'].strip()
         prompt_type = data.get('prompt_type', None)
         use_test_file = data.get('use_test_file', False)
+        model_type = data.get('model_type', 'standard')  # 新增模型类型参数
 
-        api_logger.info(f"Processing request - prompt_type: {prompt_type}, use_test_file: {use_test_file}, input_length: {len(user_input)}")
+        api_logger.info(f"Processing request - prompt_type: {prompt_type}, use_test_file: {use_test_file}, model_type: {model_type}, input_length: {len(user_input)}")
 
-        result = ai_service.generate_content(user_input, prompt_type, use_test_file)
+        result = ai_service.generate_content(user_input, prompt_type, use_test_file, model_type)
 
         processing_time = time.time() - start_time
         api_logger.info(f"Request completed successfully - processing_time: {processing_time:.2f}s, format: {result.get('format', 'unknown')}")
@@ -175,6 +176,7 @@ def generate_quant_trade_strategy():
 
         user_prompt = data['prompt'].strip()
         knowledge_base_name = data.get('knowledge_base_name', 'quant_trade_api_doc')
+        model_type = data.get('model_type', 'standard')  # 新增模型类型参数
 
         if not user_prompt:
             api_logger.warning(f"Empty prompt in request from {client_ip}")
@@ -182,9 +184,9 @@ def generate_quant_trade_strategy():
                 'error': 'Prompt cannot be empty'
             }), 400
 
-        api_logger.info(f"Processing quant trade strategy request - knowledge_base: {knowledge_base_name}, prompt_length: {len(user_prompt)}")
+        api_logger.info(f"Processing quant trade strategy request - knowledge_base: {knowledge_base_name}, model_type: {model_type}, prompt_length: {len(user_prompt)}")
 
-        result = ai_service.generate_quant_trade_strategy(user_prompt, knowledge_base_name)
+        result = ai_service.generate_quant_trade_strategy(user_prompt, knowledge_base_name, model_type)
 
         processing_time = time.time() - start_time
         api_logger.info(f"Quant trade strategy request completed successfully - processing_time: {processing_time:.2f}s, format: {result.get('format', 'unknown')}")
@@ -216,6 +218,80 @@ def get_knowledge_bases():
             'error': f'Internal server error: {str(e)}'
         }), 500
 
+@app.route('/api/models', methods=['GET'])
+def get_available_models():
+    """Get available model configurations"""
+    client_ip = request.remote_addr
+    api_logger.info(f"Received GET /api/models request from {client_ip}")
+
+    try:
+        models = ai_service.get_available_models()
+        api_logger.info(f"Returning available models to {client_ip}: {models}")
+        return jsonify({
+            'models': models,
+            'current_config': {
+                'standard_model': models['standard'],
+                'lightweight_model': models['lightweight']
+            }
+        })
+    except Exception as e:
+        api_logger.error(f"Error getting available models for {client_ip}: {e}")
+        return jsonify({
+            'error': f'Internal server error: {str(e)}'
+        }), 500
+
+@app.route('/api/models/select', methods=['POST'])
+def select_model():
+    """Select model for a specific input"""
+    start_time = time.time()
+    client_ip = request.remote_addr
+    api_logger.info(f"Received POST /api/models/select request from {client_ip}")
+
+    try:
+        data = request.get_json()
+
+        if not data or 'input' not in data:
+            api_logger.warning(f"Missing required field 'input' in model selection request from {client_ip}")
+            return jsonify({
+                'error': 'Missing required field: input'
+            }), 400
+
+        user_input = data['input'].strip()
+        model_type = data.get('model_type', 'auto')
+        prompt_type = data.get('prompt_type', None)
+
+        if not user_input:
+            api_logger.warning(f"Empty input in model selection request from {client_ip}")
+            return jsonify({
+                'error': 'Input cannot be empty'
+            }), 400
+
+        # 获取系统提示词
+        if prompt_type and prompt_type in ai_service.get_available_prompts():
+            system_prompt = ai_service.prompt_service.get_prompt_content(prompt_type)
+        else:
+            system_prompt = ai_service.prompt_service.get_default_prompt()
+
+        # 选择模型
+        selected_model = ai_service.model_service.select_model(user_input, system_prompt, model_type)
+
+        processing_time = time.time() - start_time
+        api_logger.info(f"Model selection completed successfully - selected_model: {selected_model}, processing_time: {processing_time:.2f}s")
+
+        return jsonify({
+            'selected_model': selected_model,
+            'model_type': model_type,
+            'input_length': len(user_input),
+            'reasoning': f"Model selected based on input analysis and model_type: {model_type}"
+        })
+
+    except Exception as e:
+        processing_time = time.time() - start_time
+        api_logger.error(f"Error in model selection request from {client_ip}: {e} - processing_time: {processing_time:.2f}s")
+        return jsonify({
+            'error': f'Internal server error: {str(e)}'
+        }), 500
+
 @app.before_request
 def log_request_info():
     """Log request information"""
@@ -229,5 +305,5 @@ def log_response_info(response):
 
 if __name__ == '__main__':
     api_logger.info("Flask application starting on port 5000")
-    api_logger.info(f"Available endpoints: /api/generate, /api/prompts, /health, /api/html/files/*, /api/generate_quant_trade_strategy")
+    api_logger.info(f"Available endpoints: /api/generate, /api/prompts, /health, /api/html/files/*, /api/generate_quant_trade_strategy, /api/models, /api/models/select")
     app.run(debug=False, host='0.0.0.0', port=5000)

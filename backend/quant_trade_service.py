@@ -1,17 +1,26 @@
 import time
+import os
 from logger import ai_service_logger
 from knowledge_base_service import KnowledgeBaseService
+from model_service import ModelService
 
 class QuantTradeService:
     def __init__(self, client, knowledge_base_service):
         self.client = client
         self.knowledge_base_service = knowledge_base_service
-        ai_service_logger.info("QuantTradeService initialized")
+        self.model_service = ModelService()
+        ai_service_logger.info("QuantTradeService initialized with configurable model support")
 
-    def generate_strategy(self, user_prompt, knowledge_base_name="quant_trade_api_doc"):
+    def generate_strategy(self, user_prompt, knowledge_base_name="quant_trade_api_doc", model_type='auto'):
         """Generate quantitative trading strategy using knowledge base"""
         start_time = time.time()
-        ai_service_logger.info(f"Starting quantitative trading strategy generation - knowledge_base: {knowledge_base_name}")
+        ai_service_logger.info(f"Starting quantitative trading strategy generation - knowledge_base: {knowledge_base_name}, model_type: {model_type}")
+
+        # Select model for quant trade analysis
+        analysis_model = self.model_service.select_model(user_prompt, "量化交易分析", model_type)
+        strategy_model = self.model_service.select_model(user_prompt, "量化交易策略生成", model_type)
+
+        ai_service_logger.info(f"Selected models - Analysis: {analysis_model}, Strategy: {strategy_model}")
 
         implementation_steps = None
         try:
@@ -35,7 +44,7 @@ class QuantTradeService:
             ]
 
             analysis_response = self.client.chat.completions.create(
-                model="glm-4.5-air",
+                model=analysis_model,
                 messages=analysis_messages,
                 temperature=0.5,
                 max_tokens=1000,
@@ -135,7 +144,7 @@ class QuantTradeService:
             ]
 
             response = self.client.chat.completions.create(
-                model="glm-4-0520",
+                model=strategy_model,
                 messages=messages,
                 temperature=0.7,
                 max_tokens=8192,
@@ -189,7 +198,7 @@ class QuantTradeService:
             ]
 
             response = self.client.chat.completions.create(
-                model="glm-4-0520",
+                model=strategy_model,
                 messages=messages,
                 temperature=0.7,
                 max_tokens=8192,

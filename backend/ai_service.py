@@ -52,9 +52,9 @@ class AIService:
         except Exception as e:
             return None
 
-    def generate_content(self, user_input, prompt_type=None, use_test_file=False):
+    def generate_content(self, user_input, prompt_type=None, use_test_file=False, model_type='auto'):
         start_time = time.time()
-        ai_service_logger.info(f"Starting content generation - prompt_type: {prompt_type}, input_length: {len(user_input)}")
+        ai_service_logger.info(f"Starting content generation - prompt_type: {prompt_type}, model_type: {model_type}, input_length: {len(user_input)}")
         ai_service_logger.debug(f"User input: {user_input[:100]}...")
 
         try:
@@ -64,7 +64,7 @@ class AIService:
                 if content is None:
                     return self._create_error_response("抱歉，无法加载测试文件。")
             else:
-                content = self._generate_ai_content(user_input, prompt_type)
+                content = self._generate_ai_content(user_input, prompt_type, model_type)
 
             # Process content based on format
             return self._process_generated_content(content, prompt_type, start_time)
@@ -87,7 +87,7 @@ class AIService:
             ai_service_logger.error("Failed to load test markdown file")
             return None
 
-    def _generate_ai_content(self, user_input, prompt_type):
+    def _generate_ai_content(self, user_input, prompt_type, model_type='auto'):
         """Generate content using AI"""
         # Get the appropriate prompt
         if prompt_type and prompt_type in self.prompt_service.get_available_prompts():
@@ -97,9 +97,9 @@ class AIService:
             system_prompt = self.prompt_service.get_default_prompt()
             ai_service_logger.info("Using default prompt")
 
-        # Select model based on input
-        selected_model = self.model_service.select_model(user_input, system_prompt)
-        ai_service_logger.info(f"Selected model: {selected_model} based on input analysis")
+        # Select model based on input and specified model type
+        selected_model = self.model_service.select_model(user_input, system_prompt, model_type)
+        ai_service_logger.info(f"Selected model: {selected_model} based on input analysis and model_type: {model_type}")
 
         # Generate content
         messages = [
@@ -224,8 +224,12 @@ class AIService:
         """Delete HTML file"""
         return self.html_manager.delete_html_file(file_id)
 
-    def generate_quant_trade_strategy(self, user_prompt, knowledge_base_name="quant_trade_api_doc"):
+    def get_available_models(self):
+        """获取可用的模型配置"""
+        return self.model_service.get_available_models()
+
+    def generate_quant_trade_strategy(self, user_prompt, knowledge_base_name="quant_trade_api_doc", model_type='auto'):
         """Generate quantitative trading strategy using knowledge base"""
-        return self.quant_trade_service.generate_strategy(user_prompt, knowledge_base_name)
+        return self.quant_trade_service.generate_strategy(user_prompt, knowledge_base_name, model_type)
 
     
